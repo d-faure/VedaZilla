@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.1
+// @version     0.2
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -171,6 +171,73 @@
       .attr("value", label)
       .on('click', $.proxy(callback, scope));
   }
+
+  // from https://gist.github.com/tegomass/a07e622853ec788c98cb59f28df38fda
+  //
+  // Usage:
+  //   $.ajax({
+  //     url: '/p/',
+  //     xhr: function(){return new GM_XHR();},
+  //     type: 'POST',
+  //     success: function(val){
+  //        ....
+  //     }
+  //   });
+  //
+  function GM_XHR() {
+    this.type = null;
+    this.url = null;
+    this.async = null;
+    this.username = null;
+    this.password = null;
+    this.status = null;
+    this.headers = {};
+    this.readyState = null;
+
+    this.abort = function() { this.readyState = 0; };
+
+    this.getAllResponseHeaders = function(name) { return (this.readyState != 4) ? "" : this.responseHeaders; };
+
+    this.getResponseHeader = function(name) {
+      let tmp = (new RegExp('^'+name+': (.*)$','im')).exec(this.responseHeaders);
+      return tmp ? tmp[1] : '';
+    };
+
+    this.open = function(type, url, async, username, password) {
+      this.type = type ? type : null;
+      this.url = url ? url : null;
+      this.async = async ? async : null;
+      this.username = username ? username : null;
+      this.password = password ? password : null;
+      this.readyState = 1;
+    };
+
+    this.setRequestHeader = function(name, value) { this.headers[name] = value; };
+
+    this.send = function(data) {
+      this.data = data;
+      let that = this;
+      // http://wiki.greasespot.net/GM_xmlhttpRequest
+      GM.xmlHttpRequest({
+        method: this.type,
+        url: this.url,
+        headers: this.headers,
+        data: this.data,
+        onload: function(rsp) {
+          // Populate wrapper object with returned data
+          // including the Greasemonkey specific "responseHeaders"
+          for (var k in rsp)
+            that[k] = rsp[k];
+          // now we call onreadystatechange
+          that.onreadystatechange();
+        },
+        onerror: function(rsp) {
+          for (var k in rsp)
+            that[k] = rsp[k];
+        }
+      });
+    };
+  };
 
   //-- Entry point dispatcher ----
   (function(url) {

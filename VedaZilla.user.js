@@ -17,7 +17,7 @@
 // @grant       GM.xmlHttpRequest
 // @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
 // @require     https://games.mountyhall.com/mountyhall/JavaScripts/jquery/js/jquery-1.11.3.min.js
-// @downloadURL downloadURL
+// @downloadURL https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.user.js
 // @updateURL   updateURL
 // ==/UserScript==
 /*eslint curly: ["warn", "multi-or-nest"], no-multi-spaces: "off" */

@@ -2,7 +2,7 @@
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
 // @version     0.1
-// @description Veda helper script for MH
+// @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
 // @match       http://games.mountyhall.com/*

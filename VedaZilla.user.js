@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.3
+// @version     0.4
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -54,7 +54,7 @@
   MH_HANDLER["MH_Play/Play_menu"] = function(p, url) {
     // DLA Timer
     let inf = $("div.infoMenu"),
-        dla = DateDMYHMS(/DLA:\s+([^<]+)</.exec(inf.html())[1]),
+        dla = DMYHMSToDate(/DLA:\s+([^<]+)</.exec(inf.html())[1]),
         cnt = $("<div/>").addClass("countdown");
 
     inf.find("br").replaceWith(cnt);
@@ -137,8 +137,12 @@
     };
   }
 
-  function DateDMYHMS(t) {
-    return new Date(t.replace(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+):(\d+)/, "$2/$1/$3 $4:$5:$6"));
+  function DMYHMSToDate(t) { return new Date(t.replace(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+):(\d+)/, "$2/$1/$3 $4:$5:$6")); }
+
+  function DateToDMYHMS(d) {
+    let p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    return [ p2(d.getDate()), p2(d.getMonth() + 1), p2(d.getFullYear()) ].join('/')
+      + ' ' + [ p2(d.getHours()), p2(d.getMinutes()), p2(d.getSeconds()) ].join(':');
   }
 
   function DateDiff(d1, d2) {
@@ -150,12 +154,11 @@
     diff.hour = tmp % 24; tmp = Math.floor((tmp - diff.hour) / 24);
     diff.day  = tmp;
 
-    return (diff.day > 5) ? "> 5j"
-    : $.grep([diff.day > 0 ? diff.day +"j" : null,
-              diff.hour > 0 ? diff.hour +"h" : null,
-              diff.min > 0 ? diff.min +"m" : null,
-              diff.sec > 0 ? diff.sec +"s" : null],
-             function(o){ return o; }).join(" ");
+    return (diff.day > 5) ? "> 5j" : $.grep(
+      [ diff.day > 0 ? diff.day +"j" : null,
+        diff.hour > 0 ? diff.hour +"h" : null,
+        diff.min > 0 ? diff.min +"m" : null,
+        diff.sec > 0 ? diff.sec +"s" : null ], function(o){ return o; }).join(" ");
   }
 
   function ExtractPos(t) {

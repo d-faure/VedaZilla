@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.4
+// @version     0.5
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -39,14 +39,17 @@
       VZ_BLUE = "#99CCFF";
 
   MH_HANDLER["MH_Play/PlayStart2"] = function(p, url) {
+    // Boutons login
     $("#viewbutton")
-      .css("margin-right", "0.5em")
-      .css("color", VZ_GREEN)
+      .css({
+        "margin-right": "0.5em",
+        "color": VZ_GREEN
+      })
       .after(
-      $("#loginbutton")
-      .detach()
-      .css("color", VZ_RED)
-    );
+        $("#loginbutton")
+          .detach()
+          .css({"color": VZ_RED})
+      );
   };
 
   MH_HANDLER["MH_Play/TurnStart"] = "test authentification";
@@ -68,8 +71,9 @@
       cnt.html(diff);
     }, 1000);
 
-    // Title
-    let scInfo = GetScriptInfo();
+    // Liens Titre
+    let linkcss = {"color": inf.css("color"), "text-decoration": "underline"},
+        scInfo = GetScriptInfo();
     $("div.titreMenu")
       .parent().after(
         $("<div/>")
@@ -84,30 +88,35 @@
             "padding-top": "4px",
             "border-top": "1px solid " + inf.css("color")
           })
-          .append($("<a href='https://pharoz.net/MH/forum/' target='KM_forum'>Forum</a>")
-            .css("color", inf.css("color")))
-          .append(" - ")
+          .css({"color": inf.css("color")})
+          .append($("<a href='//pharoz.net/MH/forum/' target='KM_forum'>Forum</a>")
+            .css(linkcss))
+          .append(" &middot; ")
+          .append($("<a href='//www.sciz.fr/event' target='SCIZ'>SCIZ</a>")
+            .css(linkcss))
+          .append(" &middot; ")
           .append($("<a href='" + scInfo.downloadURL + "' title='" + scInfo.name + " v" + scInfo.version + "' target='_top'>MAJ</a>")
-              .css("color", inf.css("color")))
+              .css(linkcss))
       );
   };
 
   MH_HANDLER["MH_Play/Play_profil2"] = function(p, url) { GM.log("unhandled"); };
 
   MH_HANDLER["MH_Play/Play_action"] = function(p, url) {
+    // Actions spéciales
     let s = $('select'),
-        b = s.css("background-color");
+        b = s.css("background-color"),
+        bg = {"background-color": VZ_BLUE};
     s.find('optgroup').each(function() {
       if ($(this).prop('label') == "** Actions Spéciales **") {
-        s.find('optgroup').children().css("background-color", b);
-        $(this).children().css("background-color", VZ_BLUE);
-        s.css("background-color", VZ_BLUE);
+        s.find('optgroup').children().css({"background-color": b});
+        $(this).children().css(bg);
+        s.css(bg);
       }
     });
   };
 
   MH_HANDLER["MH_Play/Play_e_follo"] = function(p, url) {
-
     // Actions des suivants
     $('form td.mh_titre3').each(function(i, e){
       let td = $(e),
@@ -251,8 +260,12 @@
     if (typeof MH_HANDLER[p] !== "function")
       GM.log('// MH_HANDLER["' + p + '"] = function(p, url) { GM.log("unhandled"); };');
     else {
-      GM.log(p);
-      MH_HANDLER[p](p, url);
+      // delayed call to let the page built before tweaking it
+      window.setTimeout(function () {
+        GM.log('[HANDLING "' + p + '"]');
+        MH_HANDLER[p](p, url);
+        GM.log('[HANDLED "' + p + '"]');
+      }, 10);
     }
   })(window.location.pathname);
 

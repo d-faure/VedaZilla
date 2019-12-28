@@ -137,6 +137,92 @@
     });
   };
 
+  MH_HANDLER["Messagerie/ViewMessage"] = function(p, url) {
+    GM.log("unhandled");
+  };
+  MH_HANDLER["Messagerie/MH_Messagerie"] = function(p, url) {
+    // Rédaction messages
+    if (document.location.search.match(/^\?cat=3/)) {
+      let ti = $("input[name=Titre]"),
+          ta = $("textarea[name='Message']"),
+          bt = $("input[name='bsSend']"),
+          pr = (function(bt) {
+            bt.closest( "tr" )
+              .after(
+                $("<tr>")
+                  .addClass("mh_tdpage")
+                  .append(
+                    $("<td>")
+                      .attr("colspan", 4)
+                      .append(
+                        $("<div>")
+                          .attr("id", "preview")
+                      )
+                    )
+              );
+            return $('#preview');
+          })(bt),
+          render = function(from, to) {
+            to.html((function/*wordwrap*/(str, width, brk, cut){
+              brk = brk || '\n';
+              width = width || 75;
+              cut = cut || false;
+              if(!str)  return str;
+              let regex = '.{0,' + width + '}(\\s|$)' + (cut ? '|.{' + width + '}|.+$' : '|\\S+?(\\s|$)');
+              return str.match(RegExp(regex, 'g')).join(brk);
+            })(from.val(), 75, '<br/>'));
+          },
+          enclose = function(ta, ts, te) {
+            let beg = ta[0].selectionStart,
+                end = ta[0].selectionEnd,
+                sel = ta.val().substring(beg, end) || "copier le texte ici";
+            ta.val(ta.val().substring(0, beg) + ts + sel + te + ta.val().substring(end, ta.val().length));
+            ta.trigger("change");
+          };
+
+      ta.on('keyup change', function(e) { render($(this), pr); });
+
+      bt.parent().append("&nbsp;&nbsp;&nbsp;");
+      $.each([
+        ["<b>G</b>", function() { enclose(ta, "<b>", "</b>"); }],
+        ["<i>I</i>", function() { enclose(ta, "<i>", "</i>"); }],
+        ["<u>S</u>", function() { enclose(ta, "<u>", "</u>"); }],
+        ["<tt>pre</tt>", function() { enclose(ta, "\n<pre>\n", "\n</pre>\n"); }],
+        ["Quote", function() { enclose(ta, "<fieldset><legend></legend>", "</fieldset>"); }],
+        ["Trõlldûctéûr", function() {
+          ta.val(
+            ta.val()
+            .replace(/°*y°*/g, '°y°')
+            .replace(/a/g, 'à').replace(/e/g, 'é').replace(/i/g, 'ï').replace(/o/g, 'õ').replace(/u/g, 'û')
+            .replace(/A/g, 'À').replace(/E/g, 'É').replace(/I/g, 'Ï').replace(/O/g, 'Õ').replace(/U/g, 'Û')
+          );
+          ta.trigger("change");
+        }]
+      ], function(i, e) {
+        bt.parent().append(MHButton(e[0], e[1])).append(" ");
+      });
+
+      // gestion Re(...)
+//      ti.val(function(i, v) {
+//        if (v) {
+//          let re1 = /Re\s*:\s*/ig,
+//              n = (v.match(re1) || []).length,
+//              re2 = /Re\s*\(\d+\)\s*:\s*/ig;
+//          n += (function() {
+//            let p = 0,
+//                a = (v.match(re2) || []).join().match(/\d+/g);
+//            for (let i = 0; i < a.length; ++i) p += 1 * a[i];
+//            return p; })();
+//          v = v.replace(re1, '').replace(re2, '').replace(/^\s+/g,'');
+//          let t = v.match(/^\[.*\]\s?/);
+//          v = ((n > 1) ? ("Re(" + n + ") : ") : "Re : ") + v;
+//          if (t) v = t + v.replace(t, '');
+//        }
+//        return v;
+//      });
+    }
+  };
+
   //-- Misc tools ----
   function GetScriptInfo() {
     return {
@@ -179,6 +265,14 @@
   }
 
   function MHButton(label, callback, scope) {
+    return $("<button/>")
+      .addClass("mh_form_submit")
+      .css({"margin": "auto 0px"})
+      .on('click', function() { callback.apply(scope); return false; })
+      .html(label);
+  }
+
+  function MHInput(label, callback, scope) {
     return $("<input/>")
       .addClass("mh_form_submit")
       .css("margin", "auto 0px")

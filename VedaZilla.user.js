@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.5
+// @version     0.6
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -33,28 +33,40 @@
   //GM.log("typeof unsafeWindow.jQuery = " + typeof unsafeWindow.jQuery);
 
   let MH_URL_RE = /\/mountyhall\/(.*?)\.php/,
-      MH_HANDLER = {},
-      VZ_GREEN = "#AEFFAE",
-      VZ_RED = "#FFB7B7",
-      VZ_BLUE = "#99CCFF";
+      MH_PAGE_HANDLER = {},
+      MH_COMP_HANDLER = {},
+      MH_SORT_HANDLER = {},
+      VZ_LIGHT_GREEN = "#AEFFAE",
+      VZ_PINK = "#FFB7B7",
+      VZ_BLUE = "#99CCFF",
+      VZ_PURPLE = "#900090",
+      VZ_GOLD = "#FF8000",
+      VZ_GREEN = "#058405",
+      VZ_RED = "#FF0000",
+      TIMEOUT_HANDLER = 1000 /*ms*/;
 
-  MH_HANDLER["MH_Play/PlayStart2"] = function(p, url) {
+  MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
     $("#viewbutton")
       .css({
         "margin-right": "0.5em",
-        "color": VZ_GREEN
+        "color": VZ_LIGHT_GREEN
       })
       .after(
         $("#loginbutton")
           .detach()
-          .css({"color": VZ_RED})
+          .css({"color": VZ_PINK})
       );
+    // Cosmetic charset fix
+    $("form#loginform").attr("accept-charset", "UTF-8");
   };
 
-  MH_HANDLER["MH_Play/TurnStart"] = "test authentification";
+  MH_PAGE_HANDLER["MH_Play/TurnStart"] = function(p, l) {
+    // Cosmetic charset fix
+    $("form[name='Fm_EntreeForm']").attr("accept-charset", "UTF-8");
+  }
 
-  MH_HANDLER["MH_Play/Play_menu"] = function(p, url) {
+  MH_PAGE_HANDLER["MH_Play/Play_menu"] = function(p, l) {
     // DLA Timer
     let inf = $("div.infoMenu"),
         dla = DMYHMSToDate(/DLA:\s+([^<]+)</.exec(inf.html())[1]),
@@ -62,6 +74,9 @@
 
     inf.find("br").replaceWith(cnt);
 
+    /* Shouldn't be using promise here?
+     * cf. https://dzone.com/articles/promises-and-deferred-objects
+     */
     let timer = setInterval(function() {
       let diff = DateDiff(new Date(), dla);
       if(diff.length <= 0) {
@@ -100,9 +115,84 @@
       );
   };
 
-  MH_HANDLER["MH_Play/Play_profil2"] = function(p, url) { GM.log("unhandled"); };
+  MH_PAGE_HANDLER["MH_Play/Play_profil2"] = function(p, l) { GM.log("[VZ] unhandled"); };
 
-  MH_HANDLER["MH_Play/Play_action"] = function(p, url) {
+  MH_PAGE_HANDLER["MH_Play/Play_vue"] = function(p, l) {
+    let monsterTableSpec = "table#VueMONSTRE",
+        trollTableSpec = "table#VueTROLL",
+        treasureTableSpec = "table#VueTRESOR",
+        champiTableSpec = "table#VueCHAMPIGNON",
+        lieuxTableSpec = "table#VueLIEU",
+        cadavresTableSpec = "table#VueCADAVRE",
+
+        getColIdxByColTitle = function (tableSpec, colTitle) {
+          let idx = 0;
+          $(tableSpec + " tr.mh_tdtitre  th").each(function(i) {
+            if ($(this).text().indexOf(colTitle) > -1)
+              idx = i + 1;
+            });
+          return idx;
+          },
+
+        highlightItems = function (tableSpec, colTitle, itemSpecs) {
+          let refColId = getColIdxByColTitle(tableSpec, colTitle);
+          $(tableSpec + " tr.mh_tdpage td:nth-child(" + refColId + ")").each(function () {
+            $(this).html((function(txt) {
+              $.each(itemSpecs, function(i, r) {
+                txt = txt.replace(r[0], r[1]);
+              });
+              return txt;
+            })($(this).html()));
+          });
+        },
+
+        addSameXYN = function(tableSpecs) {
+          $("<style type='text/css'> tr.xyn td { background-color: beige; }</style>").appendTo("head");
+
+          $.each(tableSpecs, function (idx, tableSpec) {
+            let xId = getColIdxByColTitle(tableSpec, "X"),
+                yId = getColIdxByColTitle(tableSpec, "Y"),
+                nId = getColIdxByColTitle(tableSpec, "N");
+            $(tableSpec + " tr.mh_tdpage").each(function(idx, _tr) {
+              let tr =  $(_tr),
+                  tdX = tr.find("td:nth-child(" + xId + ")"),
+                  tdY = tr.find("td:nth-child(" + yId + ")"),
+                  tdN = tr.find("td:nth-child(" + nId + ")");
+
+              tr.attr("data-xyn", tdX.text() + ";" + tdY.text() + ";" + tdN.text());
+
+              $.each([tdX, tdY, tdN], function(idx, _td) {
+                let td = $(_td);
+                td.hover(
+                  function () {
+                    let tr = $(this).parent("tr");
+                    $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').addClass("xyn");
+                  },
+                  function () {
+                    let tr = $(this).parent("tr");
+                    $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').remmoveClass("xyn");
+                  }
+                );
+                return td;
+              });
+            });
+          });
+        };
+
+    highlightItems(treasureTableSpec, "Type", [
+      [/(Gigots de Gob)/, "<b style='color:" + VZ_GOLD + "'>$1</b>"],
+      [/(Composant)/, "<b style='color:" + VZ_GREEN + "'>$1</b>"],
+      [/(Carte|Coquillage|Conteneur|Minerai|Parchemin|Tête Réduite|Spécial)/, "<b style='color:" + VZ_PURPLE + "'>$1</b>"]
+    ]);
+    highlightItems(lieuxTableSpec, "Nom", [
+      [/(Sortie de Portail)/, "<b style='color:" + VZ_RED + "'>$1</b>"],
+    ]);
+
+    //addSameXYN([monsterTableSpec, trollTableSpec, treasureTableSpec, champiTableSpec, lieuxTableSpec, cadavresTableSpec]);
+    // broken => ajout colonne niveau monstre asynchrone de MZ
+  };
+
+  MH_PAGE_HANDLER["MH_Play/Play_action"] = function(p, l) {
     // Actions spéciales
     let s = $('select'),
         b = s.css("background-color"),
@@ -116,7 +206,7 @@
     });
   };
 
-  MH_HANDLER["MH_Play/Play_e_follo"] = function(p, url) {
+  MH_PAGE_HANDLER["MH_Play/Play_e_follo"] = function(p, l) {
     // Actions des suivants
     $('form td.mh_titre3').each(function(i, e){
       let td = $(e),
@@ -137,12 +227,13 @@
     });
   };
 
-  MH_HANDLER["Messagerie/ViewMessage"] = function(p, url) {
-    GM.log("unhandled");
+  MH_PAGE_HANDLER["Messagerie/ViewMessage"] = function(p, l) {
+    GM.log("[VZ] unhandled");
   };
-  MH_HANDLER["Messagerie/MH_Messagerie"] = function(p, url) {
+
+  MH_PAGE_HANDLER["Messagerie/MH_Messagerie"] = function(p, l) {
     // Rédaction messages
-    if (document.location.search.match(/^\?cat=3/)) {
+    if (l.search.match(/^\?cat=3/)) {
       let ti = $("input[name=Titre]"),
           ta = $("textarea[name='Message']"),
           bt = $("input[name='bsSend']"),
@@ -221,6 +312,14 @@
 //        return v;
 //      });
     }
+  };
+
+  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceYY"] = function(p, l) {
+    HandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdComp"), MH_COMP_HANDLER, "MH_COMP_HANDLER");
+  };
+
+  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortXX"] = function(p, l) {
+    HandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdSort"), MH_SORT_HANDLER, "MH_SORT_HANDLER");
   };
 
   //-- Misc tools ----
@@ -348,19 +447,28 @@
     };
   };
 
-  //-- Entry point dispatcher ----
-  (function(url) {
-    let p = url.replace(MH_URL_RE, "$1");
-    if (typeof MH_HANDLER[p] !== "function")
-      GM.log('// MH_HANDLER["' + p + '"] = function(p, url) { GM.log("unhandled"); };');
+  function HandleLocation(location, parsedLocation, hFuncs, hName) {
+    if (typeof hFuncs[parsedLocation] !== "function")
+      GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
     else {
-      // delayed call to let the page built before tweaking it
-      window.setTimeout(function () {
-        GM.log('[HANDLING "' + p + '"]');
-        MH_HANDLER[p](p, url);
-        GM.log('[HANDLED "' + p + '"]');
-      }, 10);
+      GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
+      hFuncs[parsedLocation](parsedLocation, location);
+      GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
     }
-  })(window.location.pathname);
+  }
+
+  function TimeoutPromise(milliseconds, context) {
+    let deferred = $.Deferred();
+    setTimeout(function () {
+      deferred.resolve(context);
+    }, milliseconds);
+    return deferred.promise();
+  }
+
+  //-- Entry point dispatcher ----
+  // (trying to use promise + delayed call to let the page being built before tweaking it)
+  TimeoutPromise(TIMEOUT_HANDLER, window.location).then(function (l) {
+    HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+  });
 
 })(jQuery.noConflict());

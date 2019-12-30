@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.6
+// @version     0.7
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -36,6 +36,7 @@
       MH_PAGE_HANDLER = {},
       MH_COMP_HANDLER = {},
       MH_SORT_HANDLER = {},
+      VZ_PFX = "VZ_",
       VZ_LIGHT_GREEN = "#AEFFAE",
       VZ_PINK = "#FFB7B7",
       VZ_BLUE = "#99CCFF",
@@ -43,7 +44,7 @@
       VZ_GOLD = "#FF8000",
       VZ_GREEN = "#058405",
       VZ_RED = "#FF0000",
-      TIMEOUT_HANDLER = 1000 /*ms*/;
+      TIMEOUT_HANDLER = 250 /*ms*/;
 
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
@@ -59,6 +60,11 @@
       );
     // Cosmetic charset fix
     $("form#loginform").attr("accept-charset", "UTF-8");
+  };
+
+  MH_PAGE_HANDLER["MH_Play/NewTurn/ReportOrActive"] = function(p, l) {
+    // Cosmetic charset fix
+    $("form[name='ActionForm']").attr("accept-charset", "UTF-8");
   };
 
   MH_PAGE_HANDLER["MH_Play/TurnStart"] = function(p, l) {
@@ -115,8 +121,6 @@
       );
   };
 
-  MH_PAGE_HANDLER["MH_Play/Play_profil2"] = function(p, l) { GM.log("[VZ] unhandled"); };
-
   MH_PAGE_HANDLER["MH_Play/Play_vue"] = function(p, l) {
     let monsterTableSpec = "table#VueMONSTRE",
         trollTableSpec = "table#VueTROLL",
@@ -125,18 +129,9 @@
         lieuxTableSpec = "table#VueLIEU",
         cadavresTableSpec = "table#VueCADAVRE",
 
-        getColIdxByColTitle = function (tableSpec, colTitle) {
-          let idx = 0;
-          $(tableSpec + " tr.mh_tdtitre  th").each(function(i) {
-            if ($(this).text().indexOf(colTitle) > -1)
-              idx = i + 1;
-            });
-          return idx;
-          },
-
         highlightItems = function (tableSpec, colTitle, itemSpecs) {
-          let refColId = getColIdxByColTitle(tableSpec, colTitle);
-          $(tableSpec + " tr.mh_tdpage td:nth-child(" + refColId + ")").each(function () {
+          let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("' + colTitle + '")').index() + 1;
+          $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ")").each(function () {
             $(this).html((function(txt) {
               $.each(itemSpecs, function(i, r) {
                 txt = txt.replace(r[0], r[1]);
@@ -149,35 +144,33 @@
         addSameXYN = function(tableSpecs) {
           $("<style type='text/css'> tr.xyn td { background-color: beige; }</style>").appendTo("head");
 
-          $.each(tableSpecs, function (idx, tableSpec) {
-            let xId = getColIdxByColTitle(tableSpec, "X"),
-                yId = getColIdxByColTitle(tableSpec, "Y"),
-                nId = getColIdxByColTitle(tableSpec, "N");
-            $(tableSpec + " tr.mh_tdpage").each(function(idx, _tr) {
-              let tr =  $(_tr),
+          let toggleFn = function () {
+            let tr = $(this).parent("tr");
+            $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').toggleClass("xyn");
+          };
+
+          $.each(tableSpecs, function (i, tableSpec) {
+            let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("X")').index(),
+                xId = nthChild + 1,
+                yId = nthChild + 2,
+                nId = nthChild + 3;
+            $(tableSpec + " tr.mh_tdpage").each(function(i, e) {
+              let tr =  $(e),
                   tdX = tr.find("td:nth-child(" + xId + ")"),
                   tdY = tr.find("td:nth-child(" + yId + ")"),
                   tdN = tr.find("td:nth-child(" + nId + ")");
 
-              tr.attr("data-xyn", tdX.text() + ";" + tdY.text() + ";" + tdN.text());
+              tr.attr("data-xyn", [tdX.text(), tdY.text(), tdN.text()].join(";"));
 
-              $.each([tdX, tdY, tdN], function(idx, _td) {
-                let td = $(_td);
-                td.hover(
-                  function () {
-                    let tr = $(this).parent("tr");
-                    $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').addClass("xyn");
-                  },
-                  function () {
-                    let tr = $(this).parent("tr");
-                    $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').remmoveClass("xyn");
-                  }
-                );
-                return td;
+              $.each([tdX, tdY, tdN], function(i, e) {
+                let td = $(e);
+                td.on("click mouseenter mouseleave", toggleFn);
               });
             });
           });
         };
+
+    //GM.log($("#MZ_TITRE_NIVEAU_MONSTRE"));
 
     highlightItems(treasureTableSpec, "Type", [
       [/(Gigots de Gob)/, "<b style='color:" + VZ_GOLD + "'>$1</b>"],
@@ -185,11 +178,10 @@
       [/(Carte|Coquillage|Conteneur|Minerai|Parchemin|Tête Réduite|Spécial)/, "<b style='color:" + VZ_PURPLE + "'>$1</b>"]
     ]);
     highlightItems(lieuxTableSpec, "Nom", [
+      [/(Portail de Téléportation)/, "<b style='color:" + VZ_GREEN + "'>$1</b>"],
       [/(Sortie de Portail)/, "<b style='color:" + VZ_RED + "'>$1</b>"],
     ]);
-
-    //addSameXYN([monsterTableSpec, trollTableSpec, treasureTableSpec, champiTableSpec, lieuxTableSpec, cadavresTableSpec]);
-    // broken => ajout colonne niveau monstre asynchrone de MZ
+    addSameXYN([monsterTableSpec, trollTableSpec, treasureTableSpec, champiTableSpec, lieuxTableSpec, cadavresTableSpec]);
   };
 
   MH_PAGE_HANDLER["MH_Play/Play_action"] = function(p, l) {
@@ -228,7 +220,11 @@
   };
 
   MH_PAGE_HANDLER["Messagerie/ViewMessage"] = function(p, l) {
-    GM.log("[VZ] unhandled");
+    $("input[name='bAnswer']").parent().prepend(
+      MHButton("Mémo Citation", function () {
+        SetVZValue('LAST_QUOTE', $('#messageContent').html());
+      })
+    );
   };
 
   MH_PAGE_HANDLER["Messagerie/MH_Messagerie"] = function(p, l) {
@@ -253,20 +249,20 @@
               );
             return $('#preview');
           })(bt),
-          render = function(from, to) {
-            to.html((function/*wordwrap*/(str, width, brk, cut){
+          wordwrap = function (str, width, brk, cut) {
               brk = brk || '\n';
               width = width || 75;
               cut = cut || false;
               if(!str)  return str;
               let regex = '.{0,' + width + '}(\\s|$)' + (cut ? '|.{' + width + '}|.+$' : '|\\S+?(\\s|$)');
               return str.match(RegExp(regex, 'g')).join(brk);
-            })(from.val(), 75, '<br/>'));
-          },
-          enclose = function(ta, ts, te) {
+           },
+          render = function(from, to) { to.html(wordwrap (from.val(), 75, '<br/>')); },
+          enclose = function(ta, ts, te, ph) {
             let beg = ta[0].selectionStart,
                 end = ta[0].selectionEnd,
-                sel = ta.val().substring(beg, end) || "copier le texte ici";
+                txt = ph || "copier le texte ici",
+                sel = ta.val().substring(beg, end) || txt;
             ta.val(ta.val().substring(0, beg) + ts + sel + te + ta.val().substring(end, ta.val().length));
             ta.trigger("change");
           };
@@ -275,6 +271,15 @@
 
       bt.parent().append("&nbsp;&nbsp;&nbsp;");
       $.each([
+        ["Citer", function () {
+          let q = GetVZValue('LAST_QUOTE');
+          if(q) {
+            q = "> " + q.replace(/<br\/?>/gm, "\n> ");
+            enclose(ta, "\n" + q + "\n", "", "> ");
+          }
+        }],
+        ["Mémo.", function() { SetVZValue('SAVED_MSG', ta.val()); SetVZValue('SAVED_TITLE', ti.val()); }],
+        ["Rappel", function() { ta.val(GetVZValue('SAVED_MSG')); ti.val(GetVZValue('SAVED_TITLE')); }],
         ["<b>G</b>", function() { enclose(ta, "<b>", "</b>"); }],
         ["<i>I</i>", function() { enclose(ta, "<i>", "</i>"); }],
         ["<u>S</u>", function() { enclose(ta, "<u>", "</u>"); }],
@@ -380,6 +385,9 @@
       .on('click', $.proxy(callback, scope));
   }
 
+  function GetVZValue(k) { return localStorage[VZ_PFX + k]; }
+  function SetVZValue(k, v) { localStorage[VZ_PFX + k] = v; }
+
   // from https://gist.github.com/tegomass/a07e622853ec788c98cb59f28df38fda
   //
   // Usage:
@@ -447,6 +455,14 @@
     };
   };
 
+  function TimeoutPromise(milliseconds, context) {
+    let deferred = $.Deferred();
+    setTimeout(function () {
+      deferred.resolve(context);
+    }, milliseconds);
+    return deferred.promise();
+  }
+
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
     if (typeof hFuncs[parsedLocation] !== "function")
       GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
@@ -455,14 +471,6 @@
       hFuncs[parsedLocation](parsedLocation, location);
       GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
     }
-  }
-
-  function TimeoutPromise(milliseconds, context) {
-    let deferred = $.Deferred();
-    setTimeout(function () {
-      deferred.resolve(context);
-    }, milliseconds);
-    return deferred.promise();
   }
 
   //-- Entry point dispatcher ----

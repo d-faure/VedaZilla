@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.7
+// @version     0.8
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -86,7 +86,7 @@
     let timer = setInterval(function() {
       let diff = DateDiff(new Date(), dla);
       if(diff.length <= 0) {
-        diff = "<a href='/mountyhall/MH_Play/Activate_DLA.php' target='_top' style='color:" + VZ_GREEN + "'>Vous pouvez réactiver!</a>";
+        diff = "<a href='/mountyhall/MH_Play/Activate_DLA.php' target='_top' style='color:" + VZ_LIGHT_GREEN + "'>Vous pouvez réactiver!</a>";
         clearInterval(timer);
       }
       cnt.html(diff);
@@ -119,6 +119,18 @@
           .append($("<a href='" + scInfo.downloadURL + "' title='" + scInfo.name + " v" + scInfo.version + "' target='_top'>MAJ</a>")
               .css(linkcss))
       );
+  };
+
+  MH_PAGE_HANDLER["MH_Play/Play_profil2"] = function(p, l) {
+    // Get rid of Bricol stuff and use Troogle
+    let lieux = $('a:contains("Lieux à proximité")'),
+        pos = ExtractPos(lieux.parent().text().replace(/\n/gm, ""));
+
+    lieux.attr("href", [
+      "http://troogle.iktomi.eu/entities/?utf8=%E2%9C%93",
+      "entity_search[search]=@lieu",
+      "entity_search[position_x]=" + pos.x, "entity_search[position_y]=" + pos.y, "entity_search[position_z]=" + pos.n
+      ].join('&'));
   };
 
   MH_PAGE_HANDLER["MH_Play/Play_vue"] = function(p, l) {

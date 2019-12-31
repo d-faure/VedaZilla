@@ -23,6 +23,19 @@
 // @updateURL   https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.meta.js
 // ==/UserScript==
 
+// ## Scripts utiles ##
+//
+// Ordre | Script                    | Url
+// ------+---------------------------+--------------------------------
+//   1   | Tout_MZ                   | https://greasyfork.org/scripts/23602-tout-mz/code/Tout_MZ.user.js
+//   2   | VedaZilla                 | ...
+//   3   | Trajet des gowap MkII     | https://greasyfork.org/scripts/23887-trajet-des-gowap-mkii/code/Trajet%20des%20gowap%20MkII.user.js
+//   4   | Capitan                   | https://greasyfork.org/scripts/23991-capitan/code/Capitan.user.js
+//   5   | Le Baroufleur             | https://greasyfork.org/scripts/38749-mountyhall-le-baroufleur/code/%5BMountyhall%5D%20Le%20Baroufleur.user.js
+//   6   | Assistant Mélange Magique | https://greasyfork.org/scripts/38746-mountyhall-assistant-m%C3%A9lange-magique/code/%5BMountyhall%5D%20Assistant%20M%C3%A9lange%20Magique.user.js
+//   7   | grattageComplet           | https://github.com/Dragt/listerGrattages/raw/master/grattageComplet.user.js
+//
+
 /*eslint curly: ["warn", "multi-or-nest"], no-multi-spaces: "off" */
 /*global GM, jQuery */
 
@@ -44,6 +57,7 @@
       VZ_GOLD = "#FF8000",
       VZ_GREEN = "#058405",
       VZ_RED = "#FF0000",
+      VZ_BLACK = "#000000",
       TIMEOUT_HANDLER = 250 /*ms*/;
 
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
@@ -141,6 +155,11 @@
         lieuxTableSpec = "table#VueLIEU",
         cadavresTableSpec = "table#VueCADAVRE",
 
+        styleItems = function (tableSpec, colTitle, itemSelector, style) {
+          let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("' + colTitle + '")').index() + 1;
+          $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ") " + itemSelector).css(style);
+        },
+
         highlightItems = function (tableSpec, colTitle, itemSpecs) {
           let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("' + colTitle + '")').index() + 1;
           $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ")").each(function () {
@@ -183,6 +202,9 @@
         };
 
     //GM.log($("#MZ_TITRE_NIVEAU_MONSTRE"));
+    styleItems(monsterTableSpec, "Nom",
+               "a:contains('Gowap Apprivoisé'),a:contains('Golem de cuir'),a:contains('Golem de métal'),a:contains('Golem de papier'),a:contains('Golem de mithril')",
+               { 'color': VZ_BLACK });
 
     highlightItems(treasureTableSpec, "Type", [
       [/(Gigots de Gob)/, "<b style='color:" + VZ_GOLD + "'>$1</b>"],

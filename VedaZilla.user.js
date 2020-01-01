@@ -79,7 +79,7 @@
           }
           console.log('After ' + GetVZValue('HOME_BUTTON'));
       });
-      if(GetVZValue('HOME_BUTTON') === 1){
+      if(GetVZValue('HOME_BUTTON') == 1){
           connexionButton.text('Original MH');
       }
       else{

@@ -60,19 +60,61 @@
       VZ_BLACK = "#000000",
       TIMEOUT_HANDLER = 250 /*ms*/;
 
+  // Configuration Page
+  MH_PAGE_HANDLER["MH_Play/Options/Play_o_Interface"] = function(p, l) {
+    // SetVZValue('HOME_BUTTON', 0);
+      let config = $('<fieldset>').addClass("mh_tdtitre");
+      let legend = $('<legend>').text('VedaZilla Configuration').addClass("mh_tdtitre").css({'border': 'thin solid black', width: "80%", padding: "0.3rem 0"});
+      let connexionButton = $('<button>').click(function(){
+          console.log('Before ' + GetVZValue('HOME_BUTTON'));
+          if(GetVZValue('HOME_BUTTON') == 1){
+              $(this).text('Intervertir');
+              SetVZValue('HOME_BUTTON', 0);
+              console.log('Original');
+          }
+          else{
+              $(this).text('Original MH');
+              SetVZValue('HOME_BUTTON', 1);
+              console.log('Personnalized');
+          }
+          console.log('After ' + GetVZValue('HOME_BUTTON'));
+      });
+      if(GetVZValue('HOME_BUTTON') == 1){
+          connexionButton.text('Original MH');
+      }
+      else{
+          connexionButton.text('Intervertir');
+      }
+      config
+        .append(legend)
+        .append(connexionButton);
+      config.insertBefore($('#footer1'));
+  }
+
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
-    $("#viewbutton")
-      .css({
-        "margin-right": "0.5em",
-        "color": VZ_LIGHT_GREEN
-      })
-      .after(
+    if(GetVZValue('HOME_BUTTON') == 1){
+      $("#viewbutton")
+        .css({
+          "margin-right": "0.5em",
+          "color": VZ_LIGHT_GREEN
+        })
+        .after(
+          $("#loginbutton")
+            .detach()
+            .css({"color": VZ_PINK})
+        );
+    }
+    else{
+      $("#viewbutton")
+        .css({
+          "margin-right": "0.5em",
+          "color": VZ_LIGHT_GREEN
+        });
+
         $("#loginbutton")
-          .detach()
-          .css({"color": VZ_PINK})
-      );
-    // Cosmetic charset fix
+          .css({"color": VZ_PINK});
+    }    // Cosmetic charset fix
     $("form#loginform").attr("accept-charset", "UTF-8");
   };
 

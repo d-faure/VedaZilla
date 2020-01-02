@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.8
+// @version     0.9
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -62,59 +62,45 @@
 
   // Configuration Page
   MH_PAGE_HANDLER["MH_Play/Options/Play_o_Interface"] = function(p, l) {
-    // SetVZValue('HOME_BUTTON', 0);
-      let config = $('<fieldset>').addClass("mh_tdtitre");
-      let legend = $('<legend>').text('VedaZilla Configuration').addClass("mh_tdtitre").css({'border': 'thin solid black', width: "80%", padding: "0.3rem 0"});
-      let connexionButton = $('<button>').click(function(){
-          console.log('Before ' + GetVZValue('HOME_BUTTON'));
-          if(GetVZValue('HOME_BUTTON') == 1){
-              $(this).text('Intervertir');
-              SetVZValue('HOME_BUTTON', 0);
-              console.log('Original');
-          }
-          else{
-              $(this).text('Original MH');
-              SetVZValue('HOME_BUTTON', 1);
-              console.log('Personnalized');
-          }
-          console.log('After ' + GetVZValue('HOME_BUTTON'));
-      });
-      if(GetVZValue('HOME_BUTTON') == 1){
-          connexionButton.text('Original MH');
-      }
-      else{
-          connexionButton.text('Intervertir');
-      }
-      config
-        .append(legend)
-        .append(connexionButton);
-      config.insertBefore($('#footer1'));
+    let options = (function (title) {
+          let options = $('<table>').addClass("mh_tdborder").attr({
+            width: "98%",
+            cellspacing: 1,
+            cellpadding: 2,
+            align: "center" });
+          $('#footer1').before(
+            $('<div>').addClass("titre2").text(title)
+            .append(options));
+          return options;
+        })('VedaZilla : Options'),
+        addSection = function (options, txt) {
+          options.append(
+            $('<tr>').addClass("mh_tdtitre").append(
+              $('<td>').attr({style: "font-weight: bold;"}).text(txt + " :")));
+        },
+        addOption = function (options, txt, content) {
+          options.append(
+            $('<tr>').addClass("mh_tdpage").append(
+              $('<td>').text(txt + " : ").append(content)));
+        };
+
+    addSection(options, "Boutons de connexion");
+    let cnxButtonLabel = function () { return (GetVZIntValue('HOME_BUTTON', 0) === 0) ? 'Original MH' : 'Special Klak'; }
+    addOption(options, "Ordre",  MHButton(cnxButtonLabel(), function () {
+      SetVZValue('HOME_BUTTON', 1 - GetVZIntValue('HOME_BUTTON', 0));
+      $(this).text(cnxButtonLabel());
+    }));
   }
 
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
-    if(GetVZValue('HOME_BUTTON') == 1){
-      $("#viewbutton")
-        .css({
-          "margin-right": "0.5em",
-          "color": VZ_LIGHT_GREEN
-        })
-        .after(
-          $("#loginbutton")
-            .detach()
-            .css({"color": VZ_PINK})
-        );
-    }
-    else{
-      $("#viewbutton")
-        .css({
-          "margin-right": "0.5em",
-          "color": VZ_LIGHT_GREEN
-        });
+    let btView = $("#viewbutton").css({color: VZ_LIGHT_GREEN, "margin-right": "0.5em"}),
+        btLogin = $("#loginbutton").css({color: VZ_PINK, "margin-right": "0.5em"});
 
-        $("#loginbutton")
-          .css({"color": VZ_PINK});
-    }    // Cosmetic charset fix
+    if (GetVZIntValue('HOME_BUTTON', 0))
+        btView.after(btLogin.detach());
+
+    // Cosmetic charset fix
     $("form#loginform").attr("accept-charset", "UTF-8");
   };
 
@@ -448,7 +434,7 @@
     return $("<button/>")
       .addClass("mh_form_submit")
       .css({"margin": "auto 0px"})
-      .on('click', function() { callback.apply(scope); return false; })
+      .on('click', function() { $.proxy(callback, scope || this)(); return false; })
       .html(label);
   }
 
@@ -458,10 +444,11 @@
       .css("margin", "auto 0px")
       .attr("type", "button")
       .attr("value", label)
-      .on('click', $.proxy(callback, scope));
+      .on('click', $.proxy(callback, scope || this));
   }
 
-  function GetVZValue(k) { return localStorage[VZ_PFX + k]; }
+  function GetVZValue(k, def) { return localStorage[VZ_PFX + k] || def; }
+  function GetVZIntValue(k, def) { return +GetVZValue(k, def); }
   function SetVZValue(k, v) { localStorage[VZ_PFX + k] = v; }
 
   // from https://gist.github.com/tegomass/a07e622853ec788c98cb59f28df38fda

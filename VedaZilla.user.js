@@ -458,11 +458,11 @@
     diff.hour = tmp % 24; tmp = Math.floor((tmp - diff.hour) / 24);
     diff.day  = tmp;
 
-    return (diff.day > 5) ? "> 5j" : $.grep(
-      [ diff.day > 0 ? diff.day +"j" : null,
-       diff.hour > 0 ? diff.hour +"h" : null,
-       diff.min > 0 ? diff.min +"m" : null,
-       diff.sec > 0 ? diff.sec +"s" : null ], function(o){ return o; }).join(" ");
+    return (diff.day > 5) ? "> 5j" : $.grep([
+      diff.day  > 0 ? diff.day  + "j" : null,
+      diff.hour > 0 ? diff.hour + "h" : null,
+      diff.min  > 0 ? diff.min  + "m" : null,
+      diff.sec  > 0 ? diff.sec  + "s" : null ], function(o){ return o; }).join(" ");
   }
 
   function ExtractPos(t) {

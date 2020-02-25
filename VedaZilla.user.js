@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.10
+// @version     0.11
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -39,7 +39,7 @@
 /*eslint curly: ["warn", "multi-or-nest"], no-multi-spaces: "off" */
 /*global GM, jQuery */
 
-(function($) {
+(async function($) {
   'use strict';
   //GM.log("$.fn.jquery = " + $.fn.jquery);
   //GM.log("typeof $ = " + typeof $);
@@ -234,12 +234,12 @@
         },
 
         addSameXYN = function(tableSpecs) {
-          $("<style type='text/css'> tr.xyn td { background-color: beige; }</style>").appendTo("head");
+          $("<style type='text/css'>tr.xyn td, tr.xyn-sel td { background-color: beige; }</style>").appendTo("head");
 
-          let toggleFn = function () {
-            let tr = $(this).parent("tr");
-            $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').toggleClass("xyn");
-          };
+          let toggleFn = function (e) {
+                let tr = $(this).parent("tr");
+                $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').toggleClass(e.data.class);
+              };
 
           $.each(tableSpecs, function (i, tableSpec) {
             let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("X")').index(),
@@ -256,7 +256,8 @@
 
               $.each([tdX, tdY, tdN], function(i, e) {
                 let td = $(e);
-                td.on("click mouseenter mouseleave", toggleFn);
+                td.on("mouseenter mouseleave", {class:"xyn"}, toggleFn);
+                td.on("click", {class:"xyn-sel"}, toggleFn);
               });
             });
           });
@@ -578,6 +579,8 @@
   }
 
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
+    // should perhaps introduce MutationObserver (https://stackoverflow.com/a/47406751/4153864)
+
     if (typeof hFuncs[parsedLocation] !== "function")
       GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
     else {
@@ -588,9 +591,15 @@
   }
 
   //-- Entry point dispatcher ----
+/*
   // (trying to use promise + delayed call to let the page being built before tweaking it)
   TimeoutPromise(TIMEOUT_HANDLER, window.location).then(function (l) {
     HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
   });
+*/
+  // truly asynchronous call
+  await (function (l) {
+    HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+  })(window.location);
 
 })(jQuery.noConflict());

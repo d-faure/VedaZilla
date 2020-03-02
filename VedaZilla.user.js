@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.11
+// @version     0.12
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -579,15 +579,25 @@
   }
 
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
-    // should perhaps introduce MutationObserver (https://stackoverflow.com/a/47406751/4153864)
-
-    if (typeof hFuncs[parsedLocation] !== "function")
-      GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
-    else {
-      GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
-      hFuncs[parsedLocation](parsedLocation, location);
-      GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
-    }
+    // cf. https://stackoverflow.com/a/47406751/4153864
+    let timer,
+        handler = function (o) {
+          o.disconnect();
+          // the handler itself
+          if (typeof hFuncs[parsedLocation] !== "function")
+            GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
+          else {
+            GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
+            hFuncs[parsedLocation](parsedLocation, location);
+            GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
+          }
+        },
+        observer = new MutationObserver(function (changes, o) {
+            clearTimeout(timer);
+            timer = setTimeout(handler, TIMEOUT_HANDLER, o);
+        });
+    timer = setTimeout(handler, TIMEOUT_HANDLER, observer); // wait for the page to stay still
+    observer.observe(document, {childList: true, attributes: true, characterData: true, subtree: true});
   }
 
   //-- Entry point dispatcher ----

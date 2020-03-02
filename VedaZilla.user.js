@@ -426,11 +426,11 @@
     //      });
   };
   MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceYY"] = function(p, l) {
-    HandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdComp"), MH_COMP_HANDLER, "MH_COMP_HANDLER");
+    doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdComp"), MH_COMP_HANDLER, "MH_COMP_HANDLER");
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortXX"] = function(p, l) {
-    HandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdSort"), MH_SORT_HANDLER, "MH_SORT_HANDLER");
+    doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdSort"), MH_SORT_HANDLER, "MH_SORT_HANDLER");
   };
 
   //-- Misc tools ----
@@ -578,19 +578,23 @@
     return deferred.promise();
   }
 
+  function doHandleLocation(location, parsedLocation, hFuncs, hName) {
+    if (typeof hFuncs[parsedLocation] !== "function")
+      GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
+    else {
+      GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
+      hFuncs[parsedLocation](parsedLocation, location);
+      GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
+    }
+  }
+
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
     // cf. https://stackoverflow.com/a/47406751/4153864
     let timer,
         handler = function (o) {
           o.disconnect();
           // the handler itself
-          if (typeof hFuncs[parsedLocation] !== "function")
-            GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
-          else {
-            GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
-            hFuncs[parsedLocation](parsedLocation, location);
-            GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
-          }
+          doHandleLocation(location, parsedLocation, hFuncs, hName);
         },
         observer = new MutationObserver(function (changes, o) {
             clearTimeout(timer);

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.12
+// @version     0.13
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -196,6 +196,7 @@
     );
   };
 
+  MH_PAGE_HANDLER["MH_Play/Play_profil"] =
   MH_PAGE_HANDLER["MH_Play/Play_profil2"] = function(p, l) {
     // Get rid of Bricol stuff and use Troogle
     let lieux = $('a:contains("Lieux à proximité")'),

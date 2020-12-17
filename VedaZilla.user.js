@@ -193,7 +193,7 @@
 
               tr.attr("data-xyn", [tdX.text(), tdY.text(), tdN.text()].join(";"));
 
-              $.each([tdX, tdY, tdN], function(i, e) {
+              $.each(tr.find("td"), function(i, e) {
                 let td = $(e);
                 td.on("click mouseenter mouseleave", toggleFn);
               });

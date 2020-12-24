@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.13
+// @version     0.14
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -18,7 +18,6 @@
 // @grant       GM.xmlHttpRequest
 // @grant       GM_xmlHttpRequest
 // @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
-// @require     https://games.mountyhall.com/mountyhall/JavaScripts/jquery/js/jquery-1.11.3.min.js
 // @downloadURL https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.user.js
 // @updateURL   https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.meta.js
 // ==/UserScript==
@@ -398,12 +397,12 @@
 
     // reply
     if (GetVZIntValue(VZV_REPLY_TO_SELF, 0) !== 0) {
-      (function ($){
+      //(function ($){
         let n = $("a[href*='javascript:EnterPJView(']")[0].href.split("(")[1].split(',')[0],
             dt = $('#dest_tags');
         if (! dt.tagExist(n))
           dt.addTag(n, n);
-      })(unsafeWindow.jQuery);
+      //})(unsafeWindow.jQuery);
     }
 
     //
@@ -617,4 +616,4 @@
     HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
   })(window.location);
 
-})(jQuery.noConflict());
+})(unsafeWindow.jQuery);

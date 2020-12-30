@@ -504,7 +504,12 @@
     }
   }
 
-  // from https://gist.github.com/tegomass/a07e622853ec788c98cb59f28df38fda
+  // [https://gist.github.com/monperrus/999065 + patches according to comments]
+  // allows using all Jquery AJAX methods in Greasemonkey
+  // inspired from http://ryangreenberg.com/archives/2010/03/greasemonkey_jquery.php
+  // works with JQuery 1.5
+  // (c) 2011 Martin Monperrus
+  // (c) 2010 Ryan Greenberg
   //
   // Usage:
   //   $.ajax({
@@ -515,7 +520,6 @@
   //        ....
   //     }
   //   });
-  //
   function GM_XHR() {
     this.type = null;
     this.url = null;
@@ -526,13 +530,20 @@
     this.headers = {};
     this.readyState = null;
 
-    this.abort = function() { this.readyState = 0; };
+    this.abort = function() {
+        this.readyState = 0;
+    };
 
-    this.getAllResponseHeaders = function(name) { return (this.readyState != 4) ? "" : this.responseHeaders; };
+    this.getAllResponseHeaders = function(name) {
+      if (this.readyState!=4) return "";
+      return this.responseHeaders;
+    };
 
     this.getResponseHeader = function(name) {
-      let tmp = (new RegExp('^'+name+': (.*)$','im')).exec(this.responseHeaders);
-      return tmp ? tmp[1] : '';
+      var regexp = new RegExp('^'+name+': (.*)$','im');
+      var match = regexp.exec(this.responseHeaders);
+      if (match) { return match[1]; }
+      return '';
     };
 
     this.open = function(type, url, async, username, password) {
@@ -544,28 +555,31 @@
       this.readyState = 1;
     };
 
-    this.setRequestHeader = function(name, value) { this.headers[name] = value; };
+    this.setRequestHeader = function(name, value) {
+      this.headers[name] = value;
+    };
 
     this.send = function(data) {
       this.data = data;
-      let that = this;
+      var that = this;
       // http://wiki.greasespot.net/GM_xmlhttpRequest
-      GM.xmlHttpRequest({
+      GM_xmlhttpRequest({
         method: this.type,
         url: this.url,
         headers: this.headers,
         data: this.data,
+        responseType: this.responseType,
         onload: function(rsp) {
           // Populate wrapper object with returned data
           // including the Greasemonkey specific "responseHeaders"
-          for (var k in rsp)
-            that[k] = rsp[k];
+          for (var k in Object.getOwnPropertyNames(rsp)) { that[Object.getOwnPropertyNames(rsp)[k]] = rsp[Object.getOwnPropertyNames(rsp)[k]]; }
           // now we call onreadystatechange
-          that.onreadystatechange();
+          if (that.onload) that.onload(); else that.onreadystatechange();
         },
         onerror: function(rsp) {
-          for (var k in rsp)
-            that[k] = rsp[k];
+          for (var k in Object.getOwnPropertyNames(rsp)) { that[Object.getOwnPropertyNames(rsp)[k]] = rsp[Object.getOwnPropertyNames(rsp)[k]]; }
+          // now we call onreadystatechange
+          if (that.onerror) that.onerror(); else that.onreadystatechange();
         }
       });
     };

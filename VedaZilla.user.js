@@ -530,20 +530,13 @@
     this.headers = {};
     this.readyState = null;
 
-    this.abort = function() {
-        this.readyState = 0;
-    };
+    this.abort = function() { this.readyState = 0; };
 
-    this.getAllResponseHeaders = function(name) {
-      if (this.readyState!=4) return "";
-      return this.responseHeaders;
-    };
+    this.getAllResponseHeaders = function(name) { return (this.readyState!=4) ? "" : this.responseHeaders; };
 
     this.getResponseHeader = function(name) {
-      var regexp = new RegExp('^'+name+': (.*)$','im');
-      var match = regexp.exec(this.responseHeaders);
-      if (match) { return match[1]; }
-      return '';
+      let match = (new RegExp('^'+name+': (.*)$','im')).exec(this.responseHeaders);
+      return match ? match[1] : '';
     };
 
     this.open = function(type, url, async, username, password) {
@@ -555,13 +548,11 @@
       this.readyState = 1;
     };
 
-    this.setRequestHeader = function(name, value) {
-      this.headers[name] = value;
-    };
+    this.setRequestHeader = function(name, value) { this.headers[name] = value; };
 
     this.send = function(data) {
       this.data = data;
-      var that = this;
+      let that = this;
       // http://wiki.greasespot.net/GM_xmlhttpRequest
       GM_xmlhttpRequest({
         method: this.type,

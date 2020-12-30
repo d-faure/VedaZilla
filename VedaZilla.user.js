@@ -206,8 +206,6 @@
       "entity_search[search]=@lieu",
       "entity_search[position_x]=" + pos.x, "entity_search[position_y]=" + pos.y, "entity_search[position_z]=" + pos.n
     ].join('&'));
-
-    $("<style type='text/css'>.gridster { margin-right: 0 !important; }</style>").appendTo("head");
   };
 
   MH_PAGE_HANDLER["MH_Play/Play_vue"] = function(p, l) {
@@ -269,6 +267,7 @@
     styleItems(monsterTableSpec, "Nom",
                "a:contains('Gowap Apprivoisé'),a:contains('Golem de Cuir'),a:contains('Golem de Métal'),a:contains('Golem de Papier'),a:contains('Golem de Mithril')",
                { 'color': VZ_BLACK });
+    styleItems(monsterTableSpec, "Nom", "a:contains('Sauvage')", { 'color': VZ_GREEN });
 
     highlightItems(treasureTableSpec, "Type", [
       [/(Gigots de Gob)'?/, "<b style='color:" + VZ_GOLD + "' title='Piecettes à Miltown'>$1</b>"],

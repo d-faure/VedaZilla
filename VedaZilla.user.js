@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.15
+// @version     0.16
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -59,7 +59,8 @@
         VZV_SAVED_TITLE = 'SAVED_TITLE',
         VZV_SAVED_MSG = 'SAVED_MSG',
         VZV_HOME_BUTTON = 'HOME_BUTTON',
-        VZV_REPLY_TO_SELF = 'REPLY_TO_SELF';
+        VZV_REPLY_TO_SELF = 'REPLY_TO_SELF',
+        VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD';
 
   let MH_PAGE_HANDLER = {},
       MH_COMP_HANDLER = {},
@@ -110,8 +111,13 @@
       SetVZValue(VZV_HOME_BUTTON, 1 - GetVZIntValue(VZV_HOME_BUTTON, 0));
       $(this).text(cnxButtonLabel());
     }));
+
     addSection(options, "Messagerie");
     addCheckOpt(options, VZV_REPLY_TO_SELF, "S'ajouter en destinataire");
+
+    addSection(options, "Réhausse des lignes de tableaux de la vue");
+    addCheckOpt(options, VZV_HIGHLIGHT_ANY_TD, "Par n'inporte quelle colonne (defaut: coordonnées uniquement)");
+
     /* ... */
     addOption(options, false, $('<div>')
               .css({"text-align": "right"})
@@ -254,11 +260,13 @@
 
               tr.attr("data-xyn", [tdX.text(), tdY.text(), tdN.text()].join(";"));
 
-              $.each([tdX, tdY, tdN], function(i, e) {
-                let td = $(e);
-                td.on("mouseenter mouseleave", {class:"xyn"}, toggleFn);
-                td.on("click", {class:"xyn-sel"}, toggleFn);
-              });
+              $.each(
+                GetVZIntValue(VZV_HIGHLIGHT_ANY_TD, 0) !== 0 ? tr.find("td") : [tdX, tdY, tdN],
+                function(i, e) {
+                  let td = $(e);
+                  td.on("mouseenter mouseleave", {class:"xyn"}, toggleFn);
+                  td.on("click", {class:"xyn-sel"}, toggleFn);
+                });
             });
           });
         };

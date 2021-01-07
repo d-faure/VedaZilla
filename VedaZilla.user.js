@@ -199,7 +199,7 @@
   };
 
   MH_PAGE_HANDLER["MH_Play/Play_profil"] =
-  MH_PAGE_HANDLER["MH_Play/Play_profil2"] = function(p, l) {
+    MH_PAGE_HANDLER["MH_Play/Play_profil2"] = function(p, l) {
     // Get rid of Bricol stuff and use Troogle
     let lieux = $('a:contains("Lieux à proximité")'),
         pos = ExtractPos(lieux.parent().text().replace(/\n/gm, ""));
@@ -321,6 +321,11 @@
     });
   };
 
+   MH_PAGE_HANDLER["MH_Follower/FO_NewOrderOK"] =
+     MH_PAGE_HANDLER["MH_Follower/FO_DeleteOrder"] = function(p, l) {
+     $('form').submit();
+   };
+
   MH_PAGE_HANDLER["Messagerie/ViewMessage"] = function(p, l) {
     $("input[name='bAnswer']").parent().prepend(
       MHButton("Mémo Citation", function () {
@@ -440,23 +445,11 @@
     doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdSort"), MH_SORT_HANDLER, "MH_SORT_HANDLER");
   };
 
-  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_Sort23"] =
-  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_Sort23b"] = function(p, l) {
-    FixValidateForm();
-  };
-
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortResult"] = function(p, l) {
     GM.log("[VZ] p= " + p + " l= " + l);
   };
 
   //-- Misc tools ----
-  function FixValidateForm() {
-    $('<script>')
-      .attr('type', 'text/javascript')
-      .text('if(typeof(validate_form || {}) == "undefined")) var validate_form = function () { console.log("validate_form stub used"); };')
-      .appendTo('body');
-  }
-
   function GetScriptInfo() {
     return {
       name: GM.info.script.name,
@@ -665,3 +658,4 @@
   })).observe(document, {childList: true, subtree: true});
 
 })(unsafeWindow.jQuery);
+

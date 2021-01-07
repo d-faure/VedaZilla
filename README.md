@@ -8,9 +8,9 @@ Installation/Update URL: https://github.com/d-faure/VedaZilla/raw/master/VedaZil
 ## External scripts and installation order
 
 | Order | Script | Url |
-| --- | --- | --- |
+| :---: | --- | --- |
 | 1 | Tout_MZ | https://greasyfork.org/scripts/23602-tout-mz/code/Tout_MZ.user.js |
-| 2 | VedaZilla | <here> |
+| 2 | VedaZilla | &lt;here&gt; |
 | 3 | Trajet des gowap MkII | https://greasyfork.org/scripts/23887-trajet-des-gowap-mkii/code/Trajet%20des%20gowap%20MkII.user.js |
 | 4 | Capitan | https://greasyfork.org/scripts/23991-capitan/code/Capitan.user.js |
 | 5 | Le Baroufleur | https://greasyfork.org/scripts/38749-mountyhall-le-baroufleur/code/%5BMountyhall%5D%20Le%20Baroufleur.user.js |

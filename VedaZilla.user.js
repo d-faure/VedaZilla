@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.17
+// @version     0.19
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -57,6 +57,7 @@
         VZV_SAVED_MSG = 'SAVED_MSG',
         VZV_HOME_BUTTON = 'HOME_BUTTON',
         VZV_REPLY_TO_SELF = 'REPLY_TO_SELF',
+        VZV_SIGNATURE = 'SIGNATURE',
         VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD';
 
   let MH_PAGE_HANDLER = {},
@@ -95,9 +96,7 @@
           let opt = $("<input>").attr({
             type: "checkbox"
           }).prop("checked", GetVZIntValue(vzVal, 0) !== 0)
-          .on('change', function () {
-            SetVZValue(vzVal, 0 + $(this).prop("checked"));
-          }),
+          .on('change', function () { SetVZValue(vzVal, 0 + $(this).prop("checked")); }),
               td = addOption(options, false, opt).append(" " + txt);
           return td;
         };
@@ -111,6 +110,11 @@
 
     addSection(options, "Messagerie");
     addCheckOpt(options, VZV_REPLY_TO_SELF, "S'ajouter en destinataire");
+    addOption(options, "Signature", $("<input>")
+              .addClass("TextboxV2")
+              .on('change', function () {
+      SetVZValue(VZV_SIGNATURE, $(this).val());
+    }).val(GetVZValue(VZV_SIGNATURE, '')));
 
     addSection(options, "Réhausse des lignes de tableaux de la vue");
     addCheckOpt(options, VZV_HIGHLIGHT_ANY_TD, "Par n'inporte quelle colonne (defaut: coordonnées uniquement)");
@@ -268,7 +272,7 @@
           });
         };
 
-    //GM.log($("#MZ_TITRE_NIVEAU_MONSTRE"));
+    //VZlog($("#MZ_TITRE_NIVEAU_MONSTRE"));
     styleItems(monsterTableSpec, "Nom",
                "a:contains('Gowap Apprivoisé'),a:contains('Golem de Cuir'),a:contains('Golem de Métal'),a:contains('Golem de Papier'),a:contains('Golem de Mithril')",
                { 'color': VZ_BLACK });
@@ -327,11 +331,11 @@
    };
 
   MH_PAGE_HANDLER["Messagerie/ViewMessage"] = function(p, l) {
-    $("input[name='bAnswer']").parent().prepend(
+    ($("<span>").append(
       MHButton("Mémo Citation", function () {
         SetVZValue(VZV_LAST_QUOTE, $('#messageContent').html());
-      })
-    );
+      })).append(' - ')
+    ).prependTo($("input[name='bAnswer']").parent());
   };
 
   MH_PAGE_HANDLER["Messagerie/MH_Messagerie"] = function(p, l) {
@@ -401,7 +405,8 @@
           .replace(/A/g, 'À').replace(/E/g, 'É').replace(/I/g, 'Ï').replace(/O/g, 'Õ').replace(/U/g, 'Û')
         );
         ta.trigger("change");
-      }]
+      }],
+      ["Signature", function () { ta.val(ta.val() + "\n\n" + GetVZValue(VZV_SIGNATURE));}]
     ], function(i, e) {
       bt.parent().append(MHButton(e[0], e[1])).append(" ");
     });
@@ -446,7 +451,7 @@
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortResult"] = function(p, l) {
-    GM.log("[VZ] p= " + p + " l= " + l);
+    VZlog("p= " + p + " l= " + l);
   };
 
   //-- Misc tools ----
@@ -457,6 +462,8 @@
       downloadURL: GM.info.scriptMetaStr.match(/@downloadURL\s+(.*)\s*/i)[1]
     };
   }
+
+  function VZlog(s) { GM.log("[VZ] " + s); }
 
   function DMYHMSToDate(t) { return new Date(t.replace(/(\d+)\/(\d+)\/(\d+) (\d+):(\d+):(\d+)/, "$2/$1/$3 $4:$5:$6")); }
 
@@ -509,7 +516,11 @@
 
   function GetVZValue(k, def) { return localStorage[VZV_PFX + k] || def; }
   function GetVZIntValue(k, def) { return +GetVZValue(k, def); }
+  function GetVZData(k) { return JSON.parse(GetVZValue(k, "{}")); }
+
   function SetVZValue(k, v) { localStorage[VZV_PFX + k] = v; }
+  function SetVZData(k, o) { SetVZValue(k, JSON.stringify(o)); }
+
   function ClearVZValues(pfx) {
     let re = new RegExp("^" + (pfx || VZV_PFX));
     for (let i = 0; i < localStorage.length; i++) {
@@ -604,15 +615,18 @@
   //-- Handler management ----
   function doHandleLocation(location, parsedLocation, hFuncs, hName) {
     if (typeof(hFuncs[parsedLocation]) !== typeof(Function))
-      GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
+      VZlog('//  ' + hName + '["' + parsedLocation + '"] = function(p, l) { VZlog("[VZ] unhandled"); };');
     else {
-      GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
+      VZlog('Handling ' + hName + '["' + parsedLocation + '"]');
       hFuncs[parsedLocation](parsedLocation, location);
-      GM.log('[VZ] Handled ' + hName + '["' + parsedLocation + '"]');
+      VZlog('Handled ' + hName + '["' + parsedLocation + '"]');
     }
   }
 
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
+    VZlog('HandleLocation ' + hName + '["' + parsedLocation + '"] $.fn.jquery=' + $.fn.jquery);
+
+    ///*----
     // cf. https://stackoverflow.com/a/47406751/4153864
     let timer,
         handler = function (o) {
@@ -626,36 +640,44 @@
         });
     timer = setTimeout(handler, TIMEOUT_HANDLER, observer); // wait for the page to stay still
     observer.observe(document, {childList: true, attributes: true, characterData: true, subtree: true});
+    //----*/
+
+    /*----
+    // (using promise + delayed call to let the page being built before tweaking it)
+    TimeoutPromise(TIMEOUT_HANDLER, l).then(function () {
+      doHandleLocation(location, parsedLocation, hFuncs, hName);
+    });
+    //----*/
   }
 
 	//-- Script bootstrappîng ----
-  // insert jQuery if missing...
+  let l = window.location,
+      p = l.pathname.replace(MH_URL_RE, "$1");
+
+  //VZlog('bootstrapping on ' + l );
+
   if (typeof(unsafeWindow.jQuery) == 'undefined') {
+    VZlog("insert missing jQuery on " + p + " ...");
+
 		let head = document.getElementsByTagName('head')[0] || document.documentElement,
         script = document.createElement('script');
 		script.src = MH_JQUERY_SRC;
 		script.type = 'text/javascript';
 		script.async = true;
 		head.insertBefore(script, head.firstChild);
-	}
-  // ...and wait for it to be available...
-  (new MutationObserver(function (changes, o) {
-    if (typeof(unsafeWindow.jQuery) != 'undefined') {
-      o.disconnect();
-      $ = unsafeWindow.jQuery;
-      // ...then lastly, handle it
 
-      /*
-      // (using promise + delayed call to let the page being built before tweaking it)
-      TimeoutPromise(TIMEOUT_HANDLER, window.location).then(function (l) {
-        HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
-      }); //*/
+    (new MutationObserver(function (changes, o) {
+      VZlog('...and wait for it to be available...')
+      if (typeof(unsafeWindow.jQuery) != 'undefined') {
+        o.disconnect();
+        $ = unsafeWindow.jQuery;
 
-      (function (l) {
-        HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
-      })(window.location);
-    }
-  })).observe(document, {childList: true, subtree: true});
+        VZlog("ok, now let's handle this");
+        HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+      }
+    })).observe(document, {childList: true, subtree: true});
+
+  } else
+    HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
 
 })(unsafeWindow.jQuery);
-

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.16
+// @version     0.17
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -35,16 +35,13 @@
 //   7   | grattageComplet           | https://github.com/Dragt/listerGrattages/raw/master/grattageComplet.user.js
 //
 
-/*eslint curly: ["warn", "multi-or-nest"], no-multi-spaces: "off" */
-/*global GM, jQuery */
+/*eslint curly: ["warn", "multi-or-nest"], no-multi-spaces: "off", require-await: "error" */
 
-(async function($) {
+(function($) {
   'use strict';
-  //GM.log("$.fn.jquery = " + $.fn.jquery);
-  //GM.log("typeof $ = " + typeof $);
-  //GM.log("typeof unsafeWindow.jQuery = " + typeof unsafeWindow.jQuery);
 
-  const MH_URL_RE = /\/mountyhall\/(.*?)\.php/,
+  const MH_JQUERY_SRC = '/mountyhall/JavaScripts/jquery/js/jquery-1.11.3.min.js',
+        MH_URL_RE = /\/mountyhall\/(.*?)\.php/,
         VZ_LIGHT_GREEN = "#AEFFAE",
         VZ_PINK = "#FFB7B7",
         VZ_BLUE = "#99CCFF",
@@ -66,7 +63,7 @@
       MH_COMP_HANDLER = {},
       MH_SORT_HANDLER = {};
 
-  // Configuration Page
+  //-- Configuration Page ----
   MH_PAGE_HANDLER["MH_Play/Options/Play_o_Interface"] = function(p, l) {
     let options = (function (title) {
       let options = $('<table>').addClass("mh_tdborder").attr({
@@ -128,7 +125,7 @@
       ClearVZValues();
       return false;
     }), ")"));
-  }
+  };
 
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
@@ -434,6 +431,7 @@
     //        return v;
     //      });
   };
+
   MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceYY"] = function(p, l) {
     doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdComp"), MH_COMP_HANDLER, "MH_COMP_HANDLER");
   };
@@ -442,7 +440,23 @@
     doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdSort"), MH_SORT_HANDLER, "MH_SORT_HANDLER");
   };
 
+  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_Sort23"] =
+  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_Sort23b"] = function(p, l) {
+    FixValidateForm();
+  };
+
+  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortResult"] = function(p, l) {
+    GM.log("[VZ] p= " + p + " l= " + l);
+  };
+
   //-- Misc tools ----
+  function FixValidateForm() {
+    $('<script>')
+      .attr('type', 'text/javascript')
+      .text('if(typeof(validate_form || {}) == "undefined")) var validate_form = function () { console.log("validate_form stub used"); };')
+      .appendTo('body');
+  }
+
   function GetScriptInfo() {
     return {
       name: GM.info.script.name,
@@ -571,12 +585,14 @@
         onload: function(rsp) {
           // Populate wrapper object with returned data
           // including the Greasemonkey specific "responseHeaders"
-          for (var k in Object.getOwnPropertyNames(rsp)) { that[Object.getOwnPropertyNames(rsp)[k]] = rsp[Object.getOwnPropertyNames(rsp)[k]]; }
+          for (var k in Object.getOwnPropertyNames(rsp))
+            that[Object.getOwnPropertyNames(rsp)[k]] = rsp[Object.getOwnPropertyNames(rsp)[k]];
           // now we call onreadystatechange
           if (that.onload) that.onload(); else that.onreadystatechange();
         },
         onerror: function(rsp) {
-          for (var k in Object.getOwnPropertyNames(rsp)) { that[Object.getOwnPropertyNames(rsp)[k]] = rsp[Object.getOwnPropertyNames(rsp)[k]]; }
+          for (var k in Object.getOwnPropertyNames(rsp))
+            that[Object.getOwnPropertyNames(rsp)[k]] = rsp[Object.getOwnPropertyNames(rsp)[k]];
           // now we call onreadystatechange
           if (that.onerror) that.onerror(); else that.onreadystatechange();
         }
@@ -592,8 +608,9 @@
     return deferred.promise();
   }
 
+  //-- Handler management ----
   function doHandleLocation(location, parsedLocation, hFuncs, hName) {
-    if (typeof hFuncs[parsedLocation] !== "function")
+    if (typeof(hFuncs[parsedLocation]) !== typeof(Function))
       GM.log('[VZ] //  ' + hName + '["' + parsedLocation + '"] = function(p, l) { GM.log("[VZ] unhandled"); };');
     else {
       GM.log('[VZ] Handling ' + hName + '["' + parsedLocation + '"]');
@@ -607,7 +624,7 @@
     let timer,
         handler = function (o) {
           o.disconnect();
-          // the handler itself
+          // trigger the handler itself
           doHandleLocation(location, parsedLocation, hFuncs, hName);
         },
         observer = new MutationObserver(function (changes, o) {
@@ -618,16 +635,33 @@
     observer.observe(document, {childList: true, attributes: true, characterData: true, subtree: true});
   }
 
-  //-- Entry point dispatcher ----
-/*
-  // (trying to use promise + delayed call to let the page being built before tweaking it)
-  TimeoutPromise(TIMEOUT_HANDLER, window.location).then(function (l) {
-    HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
-  });
-*/
-  // truly asynchronous call
-  await (function (l) {
-    HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
-  })(window.location);
+	//-- Script bootstrappîng ----
+  // insert jQuery if missing...
+  if (typeof(unsafeWindow.jQuery) == 'undefined') {
+		let head = document.getElementsByTagName('head')[0] || document.documentElement,
+        script = document.createElement('script');
+		script.src = MH_JQUERY_SRC;
+		script.type = 'text/javascript';
+		script.async = true;
+		head.insertBefore(script, head.firstChild);
+	}
+  // ...and wait for it to be available...
+  (new MutationObserver(function (changes, o) {
+    if (typeof(unsafeWindow.jQuery) != 'undefined') {
+      o.disconnect();
+      $ = unsafeWindow.jQuery;
+      // ...then lastly, handle it
+
+      /*
+      // (using promise + delayed call to let the page being built before tweaking it)
+      TimeoutPromise(TIMEOUT_HANDLER, window.location).then(function (l) {
+        HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+      }); //*/
+
+      (function (l) {
+        HandleLocation(l, l.pathname.replace(MH_URL_RE, "$1"), MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+      })(window.location);
+    }
+  })).observe(document, {childList: true, subtree: true});
 
 })(unsafeWindow.jQuery);

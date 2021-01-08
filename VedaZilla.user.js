@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.19
+// @version     0.19.1
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -50,6 +50,8 @@
         VZ_GREEN = "#058405",
         VZ_RED = "#FF0000",
         VZ_BLACK = "#000000",
+        VZ_GREY = "#808080",
+        VZ_LIGHT_GREY = "#CCCCCC",
         TIMEOUT_HANDLER = 250 /*ms*/,
         VZV_PFX = "VZ_",
         VZV_LAST_QUOTE = 'LAST_QUOTE',
@@ -58,8 +60,26 @@
         VZV_HOME_BUTTON = 'HOME_BUTTON',
         VZV_REPLY_TO_SELF = 'REPLY_TO_SELF',
         VZV_SIGNATURE = 'SIGNATURE',
-        VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD';
-
+        VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD',
+        VZ_COMP = {
+          BAROUFLE: "43",
+          CDM: "116",
+          INSULTE: "118",
+          LDP: "123"
+        },
+        VZV_LAST_COMP = 'LAST_COMP',
+        VZ_SORT = {
+          HYPNO: "2",
+          IDT: "10",
+          FP: "12",
+          TP: "13",
+          SACRO: "17",
+          AA: "20",
+          PROJ: "21",
+          TELEK: "24"
+        },
+        VZV_LAST_SORT = 'LAST_SORT';
+4
   let MH_PAGE_HANDLER = {},
       MH_COMP_HANDLER = {},
       MH_SORT_HANDLER = {};
@@ -331,11 +351,10 @@
    };
 
   MH_PAGE_HANDLER["Messagerie/ViewMessage"] = function(p, l) {
-    ($("<span>").append(
-      MHButton("Mémo Citation", function () {
-        SetVZValue(VZV_LAST_QUOTE, $('#messageContent').html());
-      })).append(' - ')
-    ).prependTo($("input[name='bAnswer']").parent());
+    $("<span>")
+    .append(MHButton("Mémo Citation", function () { SetVZValue(VZV_LAST_QUOTE, $('#messageContent').html()); }))
+    .append(' &middot; ')
+    .prependTo($("input[name='bAnswer']").parent());
   };
 
   MH_PAGE_HANDLER["Messagerie/MH_Messagerie"] = function(p, l) {
@@ -442,19 +461,39 @@
     //      });
   };
 
-  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceYY"] = function(p, l) {
-    doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdComp"), MH_COMP_HANDLER, "MH_COMP_HANDLER");
+  MH_PAGE_HANDLER["MH_Play/Actions/Play_a_Attack"] = function(p, l) {
+    // Selection de cible pour Attaque, CdB...
+    FilterMonsterTargetSelector();
   };
 
-  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortXX"] = function(p, l) {
-    doHandleLocation(l, (new URLSearchParams(l.search)).get("ai_IdSort"), MH_SORT_HANDLER, "MH_SORT_HANDLER");
+  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceYY"] = function(p, l) {
+    doHandleLocation(l, SetVZValue(VZV_LAST_COMP, (new URLSearchParams(l.search)).get("ai_IdComp")), MH_COMP_HANDLER, "MH_COMP_HANDLER");
+  };
+
+  MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortXX"] =
+    MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortYY"] = function(p, l) {
+    doHandleLocation(l, SetVZValue(VZV_LAST_SORT, (new URLSearchParams(l.search)).get("ai_IdSort")), MH_SORT_HANDLER, "MH_SORT_HANDLER");
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortResult"] = function(p, l) {
-    VZlog("p= " + p + " l= " + l);
+    VZlog({
+      "": "SortResult",
+      "p": p, "l": l,
+      VZV_LAST_SORT: GetVZValue(VZV_LAST_SORT)
+    });
+
   };
 
+  MH_COMP_HANDLER[VZ_COMP.BAROUFLE] = function(p, l) { };
+
+
   //-- Misc tools ----
+  function FilterMonsterTargetSelector() {
+    $("select option").filter(function () {
+      return $(this).text().match(/(Gowap|Golem de (cuir|métal|papier|mithril))/);
+    }).css({"color": VZ_LIGHT_GREY});
+  }
+
   function GetScriptInfo() {
     return {
       name: GM.info.script.name,
@@ -518,8 +557,8 @@
   function GetVZIntValue(k, def) { return +GetVZValue(k, def); }
   function GetVZData(k) { return JSON.parse(GetVZValue(k, "{}")); }
 
-  function SetVZValue(k, v) { localStorage[VZV_PFX + k] = v; }
-  function SetVZData(k, o) { SetVZValue(k, JSON.stringify(o)); }
+  function SetVZValue(k, v) { localStorage[VZV_PFX + k] = v; return v; }
+  function SetVZData(k, o) { return SetVZValue(k, JSON.stringify(o)); }
 
   function ClearVZValues(pfx) {
     let re = new RegExp("^" + (pfx || VZV_PFX));

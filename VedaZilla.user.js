@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.19.2
+// @version     0.20
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -42,6 +42,7 @@
 
   const MH_JQUERY_SRC = '/mountyhall/JavaScripts/jquery/js/jquery-1.11.3.min.js',
         MH_URL_RE = /\/mountyhall\/(.*?)\.php/,
+        MH_FOLLOWERS_RE = /(Apprivoisé|Golem de (cuir|métal|papier|mithril))/i,
         VZ_LIGHT_GREEN = "#AEFFAE",
         VZ_PINK = "#FFB7B7",
         VZ_BLUE = "#99CCFF",
@@ -60,6 +61,7 @@
         VZV_HOME_BUTTON = 'HOME_BUTTON',
         VZV_REPLY_TO_SELF = 'REPLY_TO_SELF',
         VZV_SIGNATURE = 'SIGNATURE',
+        VZV_NO_EXTERNAL_VIEW = 'NO_EXTERNAL_VIEW',
         VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD',
         VZ_COMP = {
           PIEGE: "15",
@@ -83,7 +85,7 @@
           GDS: "28"
         },
         VZV_LAST_SORT = 'LAST_SORT';
-4
+
   let MH_PAGE_HANDLER = {},
       MH_COMP_HANDLER = {},
       MH_SORT_HANDLER = {};
@@ -140,8 +142,9 @@
       SetVZValue(VZV_SIGNATURE, $(this).val());
     }).val(GetVZValue(VZV_SIGNATURE, '')));
 
-    addSection(options, "Réhausse des lignes de tableaux de la vue");
-    addCheckOpt(options, VZV_HIGHLIGHT_ANY_TD, "Par n'inporte quelle colonne (defaut: coordonnées uniquement)");
+    addSection(options, "Vue");
+    addCheckOpt(options, VZV_NO_EXTERNAL_VIEW, "Pas de vue externe");
+    addCheckOpt(options, VZV_HIGHLIGHT_ANY_TD, "Réhausse des lignes par n'inporte quelle colonne (defaut: coordonnées uniquement)");
 
     /* ... */
     addOption(options, false, $('<div>')
@@ -155,6 +158,7 @@
     }), ")"));
   };
 
+  //-- Login ----
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
     let btView = $("#viewbutton").css({color: VZ_LIGHT_GREEN, "margin-right": "0.5em"}),
@@ -162,21 +166,9 @@
 
     if (GetVZIntValue(VZV_HOME_BUTTON, 0))
       btView.after(btLogin.detach());
-
-    // Cosmetic charset fix
-    $("form#loginform").attr("accept-charset", "UTF-8");
   };
 
-  MH_PAGE_HANDLER["MH_Play/NewTurn/ReportOrActive"] = function(p, l) {
-    // Cosmetic charset fix
-    $("form[name='ActionForm']").attr("accept-charset", "UTF-8");
-  };
-
-  MH_PAGE_HANDLER["MH_Play/TurnStart"] = function(p, l) {
-    // Cosmetic charset fix
-    $("form[name='Fm_EntreeForm']").attr("accept-charset", "UTF-8");
-  }
-
+  //-- Left menu ----
   MH_PAGE_HANDLER["MH_Play/Play_menu"] = function(p, l) {
     // DLA Timer
     let inf = $("div.infoMenu"),
@@ -247,14 +239,13 @@
         lieuxTableSpec = "table#VueLIEU",
         cadavresTableSpec = "table#VueCADAVRE",
 
-        styleItems = function (tableSpec, colTitle, itemSelector, style) {
+        getCellsForCol = function (tableSpec, colTitle) {
           let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("' + colTitle + '")').index() + 1;
-          $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ") " + itemSelector).css(style);
+          return $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ")");
         },
 
         highlightItems = function (tableSpec, colTitle, itemSpecs) {
-          let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("' + colTitle + '")').index() + 1;
-          $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ")").each(function () {
+           getCellsForCol(tableSpec, colTitle).each(function () {
             $(this).html((function(txt) {
               $.each(itemSpecs, function(i, r) {
                 txt = txt.replace(r[0], r[1]);
@@ -296,11 +287,13 @@
           });
         };
 
+    if (GetVZIntValue(VZV_NO_EXTERNAL_VIEW, 0) !== 0)
+      $("#selectVue2D").closest("div").remove();
+
     //VZlog($("#MZ_TITRE_NIVEAU_MONSTRE"));
-    styleItems(monsterTableSpec, "Nom",
-               "a:contains('Gowap Apprivoisé'),a:contains('Golem de Cuir'),a:contains('Golem de Métal'),a:contains('Golem de Papier'),a:contains('Golem de Mithril')",
-               { 'color': VZ_BLACK });
-    styleItems(monsterTableSpec, "Nom", "a:contains('Sauvage')", { 'color': VZ_GREEN });
+    let monsters = getCellsForCol(monsterTableSpec, "Nom");
+    monsters.find("a").match(MH_FOLLOWERS_RE).css({ 'color': VZ_BLACK });
+    monsters.find("a:contains('Sauvage')").css({ 'color': VZ_GREEN });
 
     highlightItems(treasureTableSpec, "Type", [
       [/(Gigots de Gob)'?/, "<b style='color:" + VZ_GOLD + "' title='Piecettes à Miltown'>$1</b>"],
@@ -492,6 +485,14 @@
 //  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_Competence43b"] = function(p, l) { VZlog("Page Composition Baroufle"); };
 //  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_Competence43c"] = function(p, l) { VZlog("Page Résultat Baroufle"); };
 
+  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceResult"] = function(p, l) {
+    VZlog("CompResult", {
+      "p": p, "l": l,
+      VZV_LAST_COMP: GetVZValue(VZV_LAST_COMP)
+    });
+    MHMsgEffet();
+  };
+
   //-- Sorts ----
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortXX"] =
     MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortYY"] = function(p, l) {
@@ -505,8 +506,7 @@
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Play_a_SortResult"] = function(p, l) {
-    VZlog({
-      "": "SortResult",
+    VZlog("SortResult", {
       "p": p, "l": l,
       VZV_LAST_SORT: GetVZValue(VZV_LAST_SORT)
     });
@@ -517,14 +517,13 @@
   function MHMsgEffet() {
     $('<div>')
       .css({ "text-align": "right" })
-      .append(MHButton("Mémo Résultat", function () { SetVZValue(VZV_LAST_QUOTE, $('#msgEffet').html()); }))
+      .append(MHButton("Mémo Résultat", function () { SetVZValue(VZV_LAST_QUOTE, $('#msgEffet').html()); VZlog($('#msgEffet').html()); }))
       .appendTo($('#msgEffet').parent());
   }
 
   function MHFilterMonsterTarget() {
-    $('select')
-      .filter(function () { return $(this).attr('name').match(/(ai_IdTarget|ai_IdCible)/i); })
-      .find('option').filter(function () { return $(this).text().match(/(Gowap|Golem de (cuir|métal|papier|mithril))/i); })
+    $('select').match(/(ai_IdTarget|ai_IdCible)/i, 'name')
+      .find('option').match(MH_FOLLOWERS_RE)
       .css({"color": VZ_LIGHT_GREY});
   }
 
@@ -553,7 +552,21 @@
       .on('click', $.proxy(callback, scope || this));
   }
 
-  function VZlog(s) { GM.log("[VZ] " + s); }
+  function EnhanceJQuery() {
+    // https://stackoverflow.com/q/5574165/4153864
+    $.fn.match = function (regex, attr) { // optional attr
+      return this.filter(function () {
+        let subject = attr ? $(this).attr(attr) : $(this).text();
+        return subject && subject.match(regex) ? 1 : 0;
+      });
+    };
+  }
+
+  function VZlog() {
+    // https://stackoverflow.com/a/25867340/4153864
+    let args = ["[VZ]"].concat(Array.prototype.slice.call(arguments));
+    console.log.apply(console, args);
+  }
 
   function GetVZValue(k, def) { return localStorage[VZV_PFX + k] || def; }
   function GetVZIntValue(k, def) { return +GetVZValue(k, def); }
@@ -698,6 +711,7 @@
 
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
     //VZlog('HandleLocation ' + hName + '["' + parsedLocation + '"] $.fn.jquery=' + $.fn.jquery);
+    EnhanceJQuery();
 
     ///*----
     // cf. https://stackoverflow.com/a/47406751/4153864

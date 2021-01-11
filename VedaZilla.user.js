@@ -183,7 +183,7 @@
     let timer = setInterval(function() {
       let diff = DateDiff(new Date(), dla);
       if(diff.length <= 0) {
-        diff = "<a href='/mountyhall/MH_Play/Activate_DLA.php' target='_top' style='color:{0}'>Vous pouvez réactiver!</a>".VZformat(VZ_LIGHT_GREEN);
+        diff = "<a href='/mountyhall/MH_Play/Activate_DLA.php' target='_top' style='color:{0}'>Vous pouvez réactiver!</a>".format(VZ_LIGHT_GREEN);
         clearInterval(timer);
       }
       cnt.html(diff);
@@ -213,7 +213,7 @@
 //      .append($("<a href='//www.sciz.fr/event' target='SCIZ'>SCIZ</a>")
 //              .css(linkcss))
 //      .append(" &middot; ")
-      .append($("<a href='{0}' title='{1} v{2}' target='_top'>MAJ</a>".VZformat(scInfo.downloadURL, scInfo.name, scInfo.version))
+      .append($("<a href='{0}' title='{1} v{2}' target='_top'>MAJ</a>".format(scInfo.downloadURL, scInfo.name, scInfo.version))
               .css(linkcss))
     );
   };
@@ -240,8 +240,8 @@
         cadavresTableSpec = "table#VueCADAVRE",
 
         getCellsForCol = function (tableSpec, colTitle) {
-          let nthChild = $("{0} tr.mh_tdtitre  th:contains('{1}')".VZformat(tableSpec, colTitle)).index() + 1;
-          return $("{0} tr.mh_tdpage td:nth-child({1})".VZformat(tableSpec, nthChild));
+          let nthChild = $("{0} tr.mh_tdtitre  th:contains('{1}')".format(tableSpec, colTitle)).index() + 1;
+          return $("{0} tr.mh_tdpage td:nth-child({1})".format(tableSpec, nthChild));
         },
 
         highlightItems = function (tableSpec, colTitle, itemSpecs) {
@@ -260,7 +260,7 @@
 
           let toggleFn = function (e) {
                 let tr = $(this).parent("tr");
-                $("tr[data-xyn='{0}']".VZformat(tr.attr("data-xyn"))).toggleClass(e.data.class);
+                $("tr[data-xyn='{0}']".format(tr.attr("data-xyn"))).toggleClass(e.data.class);
               };
 
           $.each(tableSpecs, function (i, tableSpec) {
@@ -290,19 +290,19 @@
     if (GetVZIntValue(VZV_NO_EXTERNAL_VIEW, 0) !== 0)
       $("#selectVue2D").closest("div").remove();
 
-    //VZlog($("#MZ_TITRE_NIVEAU_MONSTRE"));
+    //VZdebug($("#MZ_TITRE_NIVEAU_MONSTRE"));
     let monsters = getCellsForCol(monsterTableSpec, "Nom");
     monsters.find("a").match(MH_FOLLOWERS_RE).css({ 'color': VZ_BLACK });
     monsters.find("a:contains('Sauvage')").css({ 'color': VZ_GREEN });
 
     highlightItems(treasureTableSpec, "Type", [
-      [/(Gigots de Gob)'?/, "<b style='color:{0}' title='Piecettes à Miltown'>$1</b>".VZformat(VZ_GOLD)],
-      [/(Composant)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_GREEN)],
-      [/(Carte|Coquillage|Conteneur|Minerai|Parchemin|Tête Réduite|Spécial)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_PURPLE)]
+      [/(Gigots de Gob)'?/, "<b style='color:{0}' title='Piecettes à Miltown'>$1</b>".format(VZ_GOLD)],
+      [/(Composant)/, "<b style='color:{0}'>$1</b>".format(VZ_GREEN)],
+      [/(Carte|Coquillage|Conteneur|Minerai|Parchemin|Tête Réduite|Spécial)/, "<b style='color:{0}'>$1</b>".format(VZ_PURPLE)]
     ]);
     highlightItems(lieuxTableSpec, "Nom", [
-      [/(Portail de Téléportation)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_GREEN)],
-      [/(Sortie de Portail)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_RED)],
+      [/(Portail de Téléportation)/, "<b style='color:{0}'>$1</b>".format(VZ_GREEN)],
+      [/(Sortie de Portail)/, "<b style='color:{0}'>$1</b>".format(VZ_RED)],
     ]);
     addSameXYN([monsterTableSpec, trollTableSpec, treasureTableSpec, champiTableSpec, lieuxTableSpec, cadavresTableSpec]);
   };
@@ -331,10 +331,10 @@
           fullname = td.find("a:first").text().trim(),
           tmp = /^(\d+)\.(.*)$/.exec(fullname),
           id = tmp[1], name = tmp[2],
-          url = "<a href='/mountyhall/MH_Follower/FO_{0}.php?ai_IdFollower={id}'>{0}</a>".VZformat({id: id});
+          url = "<a href='/mountyhall/MH_Follower/FO_{0}.php?ai_IdFollower={id}'>{0}</a>".format({id: id});
       $("<tr/>")
         .append($("<td/>")
-                .append(["Profil", "Ordres", "Equipement", "Description"].map(function (v) { return url.VZformat(v); }).join(" - ")))
+                .append(["Profil", "Ordres", "Equipement", "Description"].map(function (v) { return url.format(v); }).join(" - ")))
         .insertAfter(td.parents("tr:first"));
     });
   };
@@ -469,7 +469,7 @@
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Play_a_Combat"] = function(p, l) {
-    VZlog("Résultat de combat");
+    VZinfo("Résultat de combat");
     MHMsgEffet();
   };
 
@@ -487,7 +487,7 @@
 //  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_Competence43c"] = function(p, l) { VZlog("Page Résultat Baroufle"); };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceResult"] = function(p, l) {
-    VZlog("CompResult", {
+    VZdebug("CompResult", {
       "p": p, "l": l,
       VZV_LAST_COMP: GetVZValue(VZV_LAST_COMP)
     });
@@ -507,14 +507,14 @@
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Play_a_SortResult"] = function(p, l) {
-    VZlog("SortResult", {
+    VZdebug("SortResult", {
       "p": p, "l": l,
       VZV_LAST_SORT: GetVZValue(VZV_LAST_SORT)
     });
     MHMsgEffet();
   };
 
-  //-- Misc tools ----
+  //-- Misc tools (purely MH dedicated) ----
   function MHMsgEffet() {
     $('<div>')
       .css({ "text-align": "right" })
@@ -553,14 +553,14 @@
       .on('click', $.proxy(callback, scope || this));
   }
 
+  //-- Misc Tools (general use) ----
   function RegisterJSandJQueryExtensions() {
-    // https://stackoverflow.com/a/18234317/4153864
-    String.prototype.VZformat = String.prototype.VZformat || function () {
+    // mostly https://stackoverflow.com/a/18234317/4153864
+    String.prototype.format = String.prototype.format || function () {
       let s = this.toString();
       if (arguments.length) {
         let t = typeof arguments[0],
             args = ("string" === t || "number" === t) ? Array.prototype.slice.call(arguments) : arguments[0];
-
         for (let k in args)
           s = s.replace(new RegExp("\\{" + k + "\\}", "gi"), args[k]);
       }
@@ -576,15 +576,19 @@
     };
   }
 
-  function VZlog() { VZlog_("[VZ]", Array.prototype.slice.call(arguments)); }
-  // https://stackoverflow.com/a/25867340/4153864
-  function VZlog_(pfx, args) {
+  function VZlog() { VZlog_("log", "", Array.prototype.slice.call(arguments)); }
+  function VZinfo() { VZlog_("info", "color:gray;", Array.prototype.slice.call(arguments)); }
+  function VZwarn() { VZlog_("warn", "color:#715100;", Array.prototype.slice.call(arguments)); }
+  function VZerror() { VZlog_("error", "color:red;", Array.prototype.slice.call(arguments)); }
+  function VZdebug() { VZlog_("debug", "", Array.prototype.slice.call(arguments)); }
+  function VZlog_(fn, style, args) {
     if (!args.length) return;
-    if (typeof(args[0]) == 'string')
-      args[0] = [pfx, args[0]].join(" ");
-    else
-      args = [pfx].concat(args);
-    console.log.apply(console, args);
+    let pfx = "%c[VZ]"
+    if (typeof(args[0]) == 'string') {
+      pfx = [pfx, args[0]].join(" ");
+      args.shift();
+    }
+    console[fn].apply(console, [pfx, style].concat(args));
   }
 
   function GetVZValue(k, def) { return localStorage[VZV_PFX + k] || def; }
@@ -720,11 +724,11 @@
   //-- Handler management ----
   function doHandleLocation(location, parsedLocation, hFuncs, hName) {
     if (typeof(hFuncs[parsedLocation]) !== typeof(Function))
-      VZlog('//  %s["%s"] = function(p, l) { VZlog("[VZ] unhandled"); };', hName, parsedLocation);
+      VZlog('%c//  %s["%s"] = function(p, l) { VZlog("[VZ] unhandled"); };', "color:green;", hName, parsedLocation);
     else {
-      VZlog('Handling %s["%s"]', hName, parsedLocation);
+      VZinfo('Handling %s["%s"]', hName, parsedLocation);
       hFuncs[parsedLocation](parsedLocation, location);
-      VZlog('Handled %s["%s"]', hName, parsedLocation);
+      VZinfo('Handled %s["%s"]', hName, parsedLocation);
     }
   }
 
@@ -760,10 +764,10 @@
   let l = window.location,
       p = l.pathname.replace(MH_URL_RE, "$1");
 
-  //VZlog('bootstrapping on {0}'.VZformat(l));
+  VZinfo('bootstrapping on %s', l);
 
   if (typeof(unsafeWindow.jQuery) == 'undefined') {
-    VZlog("insert missing jQuery on %s ...", p);
+    VZwarn("insert missing jQuery on %s ...", p);
 
 		let head = document.getElementsByTagName('head')[0] || document.documentElement,
         script = document.createElement('script');
@@ -773,12 +777,12 @@
 		head.insertBefore(script, head.firstChild);
 
     (new MutationObserver(function (changes, o) {
-      VZlog('...and wait for it to be available...');
+      VZwarn('...and wait for it to be available...');
       if (typeof(unsafeWindow.jQuery) != 'undefined') {
         o.disconnect();
         $ = unsafeWindow.jQuery;
 
-        VZlog("...ok, now let's handle this (%s)", p);
+        VZwarn("...ok, now let's handle this (%s)", p);
         HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
       }
     })).observe(document, {childList: true, subtree: true});

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.20
+// @version     0.21
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -183,7 +183,7 @@
     let timer = setInterval(function() {
       let diff = DateDiff(new Date(), dla);
       if(diff.length <= 0) {
-        diff = "<a href='/mountyhall/MH_Play/Activate_DLA.php' target='_top' style='color:" + VZ_LIGHT_GREEN + "'>Vous pouvez réactiver!</a>";
+        diff = "<a href='/mountyhall/MH_Play/Activate_DLA.php' target='_top' style='color:{0}'>Vous pouvez réactiver!</a>".VZformat(VZ_LIGHT_GREEN);
         clearInterval(timer);
       }
       cnt.html(diff);
@@ -213,7 +213,7 @@
 //      .append($("<a href='//www.sciz.fr/event' target='SCIZ'>SCIZ</a>")
 //              .css(linkcss))
 //      .append(" &middot; ")
-      .append($("<a href='" + scInfo.downloadURL + "' title='" + scInfo.name + " v" + scInfo.version + "' target='_top'>MAJ</a>")
+      .append($("<a href='{0}' title='{1} v{2}' target='_top'>MAJ</a>".VZformat(scInfo.downloadURL, scInfo.name, scInfo.version))
               .css(linkcss))
     );
   };
@@ -240,8 +240,8 @@
         cadavresTableSpec = "table#VueCADAVRE",
 
         getCellsForCol = function (tableSpec, colTitle) {
-          let nthChild = $(tableSpec + ' tr.mh_tdtitre  th:contains("' + colTitle + '")').index() + 1;
-          return $(tableSpec + " tr.mh_tdpage td:nth-child(" + nthChild + ")");
+          let nthChild = $("{0} tr.mh_tdtitre  th:contains('{1}')".VZformat(tableSpec, colTitle)).index() + 1;
+          return $("{0} tr.mh_tdpage td:nth-child({1})".VZformat(tableSpec, nthChild));
         },
 
         highlightItems = function (tableSpec, colTitle, itemSpecs) {
@@ -260,7 +260,7 @@
 
           let toggleFn = function (e) {
                 let tr = $(this).parent("tr");
-                $('tr[data-xyn="' + tr.attr("data-xyn") + '"]').toggleClass(e.data.class);
+                $("tr[data-xyn='{0}']".VZformat(tr.attr("data-xyn"))).toggleClass(e.data.class);
               };
 
           $.each(tableSpecs, function (i, tableSpec) {
@@ -296,13 +296,13 @@
     monsters.find("a:contains('Sauvage')").css({ 'color': VZ_GREEN });
 
     highlightItems(treasureTableSpec, "Type", [
-      [/(Gigots de Gob)'?/, "<b style='color:" + VZ_GOLD + "' title='Piecettes à Miltown'>$1</b>"],
-      [/(Composant)/, "<b style='color:" + VZ_GREEN + "'>$1</b>"],
-      [/(Carte|Coquillage|Conteneur|Minerai|Parchemin|Tête Réduite|Spécial)/, "<b style='color:" + VZ_PURPLE + "'>$1</b>"]
+      [/(Gigots de Gob)'?/, "<b style='color:{0}' title='Piecettes à Miltown'>$1</b>".VZformat(VZ_GOLD)],
+      [/(Composant)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_GREEN)],
+      [/(Carte|Coquillage|Conteneur|Minerai|Parchemin|Tête Réduite|Spécial)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_PURPLE)]
     ]);
     highlightItems(lieuxTableSpec, "Nom", [
-      [/(Portail de Téléportation)/, "<b style='color:" + VZ_GREEN + "'>$1</b>"],
-      [/(Sortie de Portail)/, "<b style='color:" + VZ_RED + "'>$1</b>"],
+      [/(Portail de Téléportation)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_GREEN)],
+      [/(Sortie de Portail)/, "<b style='color:{0}'>$1</b>".VZformat(VZ_RED)],
     ]);
     addSameXYN([monsterTableSpec, trollTableSpec, treasureTableSpec, champiTableSpec, lieuxTableSpec, cadavresTableSpec]);
   };
@@ -330,17 +330,11 @@
       let td = $(e),
           fullname = td.find("a:first").text().trim(),
           tmp = /^(\d+)\.(.*)$/.exec(fullname),
-          id = tmp[1],
-          name = tmp[2];
+          id = tmp[1], name = tmp[2],
+          url = "<a href='/mountyhall/MH_Follower/FO_{0}.php?ai_IdFollower={id}'>{0}</a>".VZformat({id: id});
       $("<tr/>")
         .append($("<td/>")
-                .append([
-        "<a href='/mountyhall/MH_Follower/FO_Profil.php?ai_IdFollower=" + id + "'>Profil</a>",
-        "<a href='/mountyhall/MH_Follower/FO_Ordres.php?ai_IdFollower=" + id + "'>Ordres</a>",
-        "<a href='/mountyhall/MH_Follower/FO_Equipement.php?ai_IdFollower=" + id + "'>Equipement</a>",
-        "<a href='/mountyhall/MH_Follower/FO_Description.php?ai_IdFollower=" + id + "'>Description</a>"
-      ].join(" - "))
-               )
+                .append(["Profil", "Ordres", "Equipement", "Description"].map(function (v) { return url.VZformat(v); }).join(" - ")))
         .insertAfter(td.parents("tr:first"));
     });
   };
@@ -350,7 +344,8 @@
      $('form').submit();
    };
 
-  MH_PAGE_HANDLER["Messagerie/ViewMessage"] = function(p, l) {
+  MH_PAGE_HANDLER["Messagerie/ViewMessage"] =
+    MH_PAGE_HANDLER["Messagerie/ViewMessageBot"] = function(p, l) {
     $("<span>")
     .append(MHButton("Mémo Citation", function () { SetVZValue(VZV_LAST_QUOTE, $('#messageContent').html()); }))
     .append(' &middot; ')
@@ -386,8 +381,13 @@
           let regex = '.{0,' + width + '}(\\s|$)' + (cut ? '|.{' + width + '}|.+$' : '|\\S+?(\\s|$)');
           return str.match(RegExp(regex, 'g')).join(brk);
         },
-        render = function(from, to) { to.html(wordwrap (from.val(), 75, '<br/>')); },
-        enclose = function(ta, ts, te, ph) {
+        render = function (from, to) { to.html(wordwrap (from.val(), 75, '<br/>')); },
+        insert = function (ta, txt) {
+          let beg = ta[0].selectionStart,
+              end = ta[0].selectionEnd;
+          ta.val(ta.val().substring(0, beg) + txt + ta.val().substring(end, ta.val().length));
+        },
+        enclose = function (ta, ts, te, ph) {
           let beg = ta[0].selectionStart,
               end = ta[0].selectionEnd,
               txt = ph || "copier le texte ici",
@@ -425,6 +425,7 @@
         );
         ta.trigger("change");
       }],
+      ["🤑", function () { insert(ta, "🤑");}],
       ["Signature", function () { ta.val(ta.val() + "\n\n" + GetVZValue(VZV_SIGNATURE));}]
     ], function(i, e) {
       bt.parent().append(MHButton(e[0], e[1])).append(" ");
@@ -552,7 +553,20 @@
       .on('click', $.proxy(callback, scope || this));
   }
 
-  function EnhanceJQuery() {
+  function RegisterJSandJQueryExtensions() {
+    // https://stackoverflow.com/a/18234317/4153864
+    String.prototype.VZformat = String.prototype.VZformat || function () {
+      let s = this.toString();
+      if (arguments.length) {
+        let t = typeof arguments[0],
+            args = ("string" === t || "number" === t) ? Array.prototype.slice.call(arguments) : arguments[0];
+
+        for (let k in args)
+          s = s.replace(new RegExp("\\{" + k + "\\}", "gi"), args[k]);
+      }
+      return s;
+    };
+
     // https://stackoverflow.com/q/5574165/4153864
     $.fn.match = function (regex, attr) { // optional attr
       return this.filter(function () {
@@ -562,9 +576,14 @@
     };
   }
 
-  function VZlog() {
-    // https://stackoverflow.com/a/25867340/4153864
-    let args = ["[VZ]"].concat(Array.prototype.slice.call(arguments));
+  function VZlog() { VZlog_("[VZ]", Array.prototype.slice.call(arguments)); }
+  // https://stackoverflow.com/a/25867340/4153864
+  function VZlog_(pfx, args) {
+    if (!args.length) return;
+    if (typeof(args[0]) == 'string')
+      args[0] = [pfx, args[0]].join(" ");
+    else
+      args = [pfx].concat(args);
     console.log.apply(console, args);
   }
 
@@ -701,17 +720,17 @@
   //-- Handler management ----
   function doHandleLocation(location, parsedLocation, hFuncs, hName) {
     if (typeof(hFuncs[parsedLocation]) !== typeof(Function))
-      VZlog('//  ' + hName + '["' + parsedLocation + '"] = function(p, l) { VZlog("[VZ] unhandled"); };');
+      VZlog('//  %s["%s"] = function(p, l) { VZlog("[VZ] unhandled"); };', hName, parsedLocation);
     else {
-      VZlog('Handling ' + hName + '["' + parsedLocation + '"]');
+      VZlog('Handling %s["%s"]', hName, parsedLocation);
       hFuncs[parsedLocation](parsedLocation, location);
-      VZlog('Handled ' + hName + '["' + parsedLocation + '"]');
+      VZlog('Handled %s["%s"]', hName, parsedLocation);
     }
   }
 
   function HandleLocation(location, parsedLocation, hFuncs, hName) {
-    //VZlog('HandleLocation ' + hName + '["' + parsedLocation + '"] $.fn.jquery=' + $.fn.jquery);
-    EnhanceJQuery();
+    //VZlog('HandleLocation %s["%s"] => $.fn.jquery=%s', hName, parsedLocation, $.fn.jquery);
+    RegisterJSandJQueryExtensions();
 
     ///*----
     // cf. https://stackoverflow.com/a/47406751/4153864
@@ -741,10 +760,10 @@
   let l = window.location,
       p = l.pathname.replace(MH_URL_RE, "$1");
 
-  //VZlog('bootstrapping on ' + l );
+  //VZlog('bootstrapping on {0}'.VZformat(l));
 
   if (typeof(unsafeWindow.jQuery) == 'undefined') {
-    VZlog("insert missing jQuery on " + p + " ...");
+    VZlog("insert missing jQuery on %s ...", p);
 
 		let head = document.getElementsByTagName('head')[0] || document.documentElement,
         script = document.createElement('script');
@@ -754,12 +773,12 @@
 		head.insertBefore(script, head.firstChild);
 
     (new MutationObserver(function (changes, o) {
-      VZlog('...and wait for it to be available...')
+      VZlog('...and wait for it to be available...');
       if (typeof(unsafeWindow.jQuery) != 'undefined') {
         o.disconnect();
         $ = unsafeWindow.jQuery;
 
-        VZlog("...ok, now let's handle this (" + p + ")");
+        VZlog("...ok, now let's handle this (%s)", p);
         HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
       }
     })).observe(document, {childList: true, subtree: true});

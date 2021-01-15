@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.21.1
+// @version     0.21.2
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -21,6 +21,8 @@
 // @downloadURL https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.user.js
 // @updateURL   https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.meta.js
 // ==/UserScript==
+
+// vérif UTF-8 ş
 
 // ## Scripts utiles ##
 //
@@ -357,7 +359,9 @@
 
   MH_PAGE_HANDLER["Messagerie/MH_Messagerie"] = function(p, l) {
     // Rédaction messages
-    if (l.search.match(/^\?cat=3/) === null)
+    let notARegularMessage = l.search.match(/^\?cat=3/) === null,
+        notAGuildMessage = l.search.match(/^\?cat=7&section=2/) === null;
+    if (notARegularMessage && notAGuildMessage)
       return;
 
     let ti = $("input[name=Titre]"),
@@ -389,6 +393,7 @@
           let beg = ta[0].selectionStart,
               end = ta[0].selectionEnd;
           ta.val(ta.val().substring(0, beg) + txt + ta.val().substring(end, ta.val().length));
+          ta.trigger("change");
         },
         enclose = function (ta, ts, te, ph) {
           let beg = ta[0].selectionStart,
@@ -435,19 +440,31 @@
         );
         ta.trigger("change");
       }],
-      ["😃", function () { insert(ta, "😃");}],
-      ["😉", function () { insert(ta, "😉");}],
-      ["😎", function () { insert(ta, "😎");}],
-      ["🤑", function () { insert(ta, "🤑");}],
-      ["😐", function () { insert(ta, "😐");}],
-      ["🤑", function () { insert(ta, "🤑");}],/**/
+      ["😃", function () { insert(ta, "😃");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/joyeux.gif
+      ["😉", function () { insert(ta, "😉");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/wink.gif
+      ["😎", function () { insert(ta, "😎");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/cool.gif
+      ["🤑", function () { insert(ta, "🤑");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/cheesy.gif
+      ["😐", function () { insert(ta, "😐");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/lipsrsealed.gif
+      ["😕", function () { insert(ta, "😕");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/embarrassed.gif
+      ["😠", function () { insert(ta, "😠");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/angry.gif
+      ["😭", function () { insert(ta, "😭");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/cry.gif
+      ["😫", function () { insert(ta, "😫");}], // http://www.mountyhall.com/Forum/forum_images/emoticons/fatigue.gif
+      ["👿", function () { insert(ta, "👿");}], // *http://www.mountyhall.com/Forum/forum_images/emoticons/evil.gif
+/*
+      ["🤑", function () { insert(ta, "🤑");}], // *http://www.mountyhall.com/Forum/forum_images/emoticons/gueulard.gif
+      ["🤑", function () { insert(ta, "🤑");}], // *http://www.mountyhall.com/Forum/forum_images/emoticons/huh.gif
+      ["🤑", function () { insert(ta, "🤑");}], // *http://www.mountyhall.com/Forum/forum_images/emoticons/rolleyes.gif
+      ["🤑", function () { insert(ta, "🤑");}], // *http://www.mountyhall.com/Forum/forum_images/emoticons/sournois.gif
+
+      ["🤑", function () { insert(ta, "🤑");}], //
+/**/
       ["Signature", function () { ta.val(ta.val() + "\n\n" + VZ.GetValue(VZV_SIGNATURE));}]
     ], function(i, e) {
       bt.parent().append(MH.Button(e[0], e[1])).append(" ");
     });
 
     // reply
-    if (VZ.GetIntValue(VZV_REPLY_TO_SELF, 0) !== 0) {
+    if (notAGuildMessage && VZ.GetIntValue(VZV_REPLY_TO_SELF, 0) !== 0) {
       //(function ($){
         let n = $("a[href*='javascript:EnterPJView(']")[0].href.split("(")[1].split(',')[0],
             dt = $('#dest_tags');
@@ -608,7 +625,13 @@
           let k = localStorage.key(i);
           if (k.match(re)) localStorage.removeItem(k);
         }
-      }
+      },
+
+      insideOut: function (o) {
+        let r = {};
+
+      },
+      "":""
     }
   })();
 
@@ -771,7 +794,7 @@
           // trigger the handler itself
           doHandleLocation(location, parsedLocation, hFuncs, hName);
         },
-        observer = new MutationObserver(function (changes, o) {
+        observer = new unsafeWindow.MutationObserver(function (changes, o) {
             clearTimeout(timer);
             timer = setTimeout(handler, TIMEOUT_HANDLER, o);
         });
@@ -787,34 +810,35 @@
     //----*/
   }
 
-	//-- Script bootstrappîng ----
-  let l = window.location,
-      p = l.pathname.replace(MH_URL_RE, "$1");
+  unsafeWindow.addEventListener("load", function () {
+    //-- Script bootstrappîng ----
+    let l = window.location,
+        p = l.pathname.replace(MH_URL_RE, "$1");
 
-  VZ.info('bootstrapping on %s', l);
+    VZ.info('bootstrapping on %s', l);
 
-  if (typeof(unsafeWindow.jQuery) == 'undefined') {
-    VZ.warn("insert missing jQuery on %s ...", p);
+    if (typeof(unsafeWindow.jQuery) == 'undefined') {
+      VZ.warn("insert missing jQuery on %s ...", p);
 
-		let head = document.getElementsByTagName('head')[0] || document.documentElement,
-        script = document.createElement('script');
-		script.src = MH_JQUERY_SRC;
-		script.type = 'text/javascript';
-		script.async = true;
-		head.insertBefore(script, head.firstChild);
+		  let head = document.getElementsByTagName('head')[0] || document.documentElement,
+          script = document.createElement('script');
+      script.src = MH_JQUERY_SRC;
+      script.type = 'text/javascript';
+      script.async = true;
+      head.insertBefore(script, head.firstChild);
 
-    (new MutationObserver(function (changes, o) {
-      VZ.warn('...and wait for it to be available...');
-      if (typeof(unsafeWindow.jQuery) != 'undefined') {
-        o.disconnect();
-        $ = unsafeWindow.jQuery;
+      (new unsafeWindow.MutationObserver(function (changes, o) {
+        VZ.warn('...and wait for it to be available...');
+        if (typeof(unsafeWindow.jQuery) != 'undefined') {
+          o.disconnect();
+          $ = unsafeWindow.jQuery;
 
-        VZ.warn("...ok, now let's handle this (%s)", p);
-        HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
-      }
-    })).observe(document, {childList: true, subtree: true});
-
-  } else
-    HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+          VZ.warn("...ok, now let's handle this (%s)", p);
+          HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+        }
+      })).observe(document, {childList: true, subtree: true});
+    } else
+      HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+  });
 
 })(unsafeWindow.jQuery);

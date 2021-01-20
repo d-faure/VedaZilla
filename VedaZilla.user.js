@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.21.2
+// @version     0.21.3
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -70,6 +70,7 @@
           PIEGE: "15",
           CDM: "16",
           INSULTE: "18",
+          PISTAGE: "21",
           LDP: "23",
           BAROUFLE: "43",
         },
@@ -91,23 +92,24 @@
         VZV_LAST_SORT = 'LAST_SORT';
 
   let MH_PAGE_HANDLER = {},
-      MH_COMP_HANDLER = {},
-      MH_SORT_HANDLER = {};
+      MH_COMP_HANDLER = {}, MH_COMP_RESULT_HANDLER = {},
+      MH_SORT_HANDLER = {}, MH_SORT_RESULT_HANDLER = {};
 
   //-- Configuration Page ----
   MH_PAGE_HANDLER["MH_Play/Options/Play_o_Interface"] = function(p, l) {
-    let options = (function (title) {
-      let options = $('<table>').addClass("mh_tdborder").attr({
-        width: "98%",
-        cellspacing: 1,
-        cellpadding: 2,
-        align: "center" }),
-          footer = $('#footer1');
-      footer.before(
-        $('<div>').addClass("titre2").text(title),
-        options);
-      return options;
-    })('VedaZilla : Options'),
+    let options =
+        (function (title) {
+          let options = $('<table>').addClass("mh_tdborder").attr({
+            width: "98%",
+            cellspacing: 1,
+            cellpadding: 2,
+            align: "center" }),
+              footer = $('#footer1');
+          footer.before(
+            $('<div>').addClass("titre2").text(title),
+            options);
+          return options;
+        })('VedaZilla : Options'),
         addSection = function (options, txt) {
           let td = $('<td>');
           options.append(
@@ -262,11 +264,11 @@
         addSameXYN = function(tableSpecs) {
           $("<style type='text/css'>tr.xyn td, tr.xyn-sel td { background-color: beige; }</style>").appendTo("head");
 
-          let toggleFn = function (e) {
+          let tdSel = "td:nth-child({0})",
+              toggleFn = function (e) {
                 let tr = $(this).parent("tr");
                 $("tr[data-xyn='{0}']".format(tr.attr("data-xyn"))).toggleClass(e.data.class);
-              },
-              tdSel = "td:nth-child({0})";
+              };
 
           $.each(tableSpecs, function (i, tableSpec) {
             let nthChild = $('{0} tr.mh_tdtitre  th:contains("X")'.format(tableSpec)).index(),
@@ -508,7 +510,8 @@
   //-- Compétences ----
   MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceYY"] = function(p, l) {
     MH.FilterMonsterTarget();
-    doHandleLocation(l, VZ.SetValue(VZV_LAST_COMP, (new URLSearchParams(l.search)).get("ai_IdComp")), MH_COMP_HANDLER, "MH_COMP_HANDLER");
+    let c = (new URLSearchParams(l.search)).get("ai_IdComp");
+    doHandleLocation(l, VZ.SetValue(VZV_LAST_COMP, c), MH_COMP_HANDLER, 'MH_COMP_HANDLER[{0}]'.format(VZ.GetCompSpec(c)));
   };
 
 //  MH_COMP_HANDLER[VZ_COMP.BAROUFLE] = function(p, l) {
@@ -519,18 +522,20 @@
 //  MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_Competence43c"] = function(p, l) { VZlog("Page Résultat Baroufle"); };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Competences/Play_a_CompetenceResult"] = function(p, l) {
-    VZ.debug("CompResult", {
-      "p": p, "l": l,
-      VZV_LAST_COMP: VZ.GetValue(VZV_LAST_COMP)
-    });
+    let c = VZ.GetValue(VZV_LAST_COMP);
+    doHandleLocation(l, c, MH_COMP_RESULT_HANDLER, 'MH_COMP_RESULT_HANDLER[{0}]'.format(VZ.GetCompSpec(c)));
     MH.MsgEffet();
+  };
+
+  MH_COMP_RESULT_HANDLER[VZ_COMP.PISTAGE] = function(p, l) {
   };
 
   //-- Sorts ----
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortXX"] =
     MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_SortYY"] = function(p, l) {
     MH.FilterMonsterTarget();
-    doHandleLocation(l, VZ.SetValue(VZV_LAST_SORT, (new URLSearchParams(l.search)).get("ai_IdSort")), MH_SORT_HANDLER, "MH_SORT_HANDLER");
+    let s = (new URLSearchParams(l.search)).get("ai_IdSort");
+    doHandleLocation(l, VZ.SetValue(VZV_LAST_SORT, s), MH_SORT_HANDLER, 'MH_SORT_HANDLER[{0}]'.format(VZ.GetSortSpec(s)));
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Sorts/Play_a_Sort24"] = function(p, l) { VZ.SetValue(VZV_LAST_SORT, VZ_SORT.TELEK); };
@@ -541,10 +546,8 @@
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Play_a_SortResult"] = function(p, l) {
-    VZ.debug("SortResult", {
-      "p": p, "l": l,
-      VZV_LAST_SORT: VZ.GetValue(VZV_LAST_SORT)
-    });
+    let s = VZ.GetValue(VZV_LAST_SORT);
+    doHandleLocation(l, s, MH_SORT_RESULT_HANDLER, 'MH_SORT_RESULT_HANDLER[{0}]'.format(VZ.GetSortSpec(s)));
     MH.MsgEffet();
   };
 
@@ -595,15 +598,28 @@
 
   //-- VedaZilla dedicated tools ----
   let VZ = (function () {
-    let _log = function (fn, style, args) {
-      if (!args.length) return;
-      let pfx = "%c[VZ]"
-      if (typeof(args[0]) == 'string') {
-        pfx = [pfx, args[0]].join(" ");
-        args.shift();
-      }
-      console[fn].apply(console, [pfx, style].concat(args));
-    };
+    let _log =
+        function (fn, style, args) {
+          if (!args.length) return;
+          let pfx = "%c[VZ]"
+          if (typeof(args[0]) == 'string') {
+            pfx = [pfx, args[0]].join(" ");
+            args.shift();
+          }
+          console[fn].apply(console, [pfx, style].concat(args));
+        },
+        _flip = function (o) {
+          let r = {};
+          for(let k in o) {
+            if (!o.hasOwnProperty(k)) continue;
+            r[o[k]] = k;
+          }
+          return r;
+        },
+        _getSpec = function (o, fmt, k) {
+          let r = _flip(o);
+          return r.hasOwnProperty(k) ? fmt.format(r[k]) : '"{0}"'.format(k);
+        };
 
     return {
       log: function () { _log("log", "", Array.prototype.slice.call(arguments)); },
@@ -627,10 +643,8 @@
         }
       },
 
-      insideOut: function (o) {
-        let r = {};
-
-      },
+      GetCompSpec: function (c) { return _getSpec(VZ_COMP, "VZ_COMP.{0}", c); },
+      GetSortSpec: function (c) { return _getSpec(VZ_SORT, "VZ_SORT.{0}", c); },
       "":""
     }
   })();
@@ -772,18 +786,18 @@
   }
 
   //-- Handler management ----
-  function doHandleLocation(location, parsedLocation, hFuncs, hName) {
+  function doHandleLocation(location, parsedLocation, hFuncs, hSpec) {
     if (typeof(hFuncs[parsedLocation]) !== typeof(Function))
-      VZ.log('%c//  %s["%s"] = function(p, l) { VZ.log("[VZ] unhandled"); };', "color:green;", hName, parsedLocation);
+      VZ.log('%c//  %s = function(p, l) { VZ.log("[VZ] unhandled"); };', "color:green;", hSpec);
     else {
-      VZ.info('Handling %s["%s"]', hName, parsedLocation);
+      VZ.info('Handling %s', hSpec);
       hFuncs[parsedLocation](parsedLocation, location);
-      VZ.info('Handled %s["%s"]', hName, parsedLocation);
+      VZ.info('Handled %s', hSpec);
     }
   }
 
-  function HandleLocation(location, parsedLocation, hFuncs, hName) {
-    //VZ.log('HandleLocation %s["%s"] => $.fn.jquery=%s', hName, parsedLocation, $.fn.jquery);
+  function HandleLocation(location, parsedLocation) {
+    //VZ.log('HandleLocation MH_PAGE_HANDLER["%s"] => $.fn.jquery=%s', parsedLocation, $.fn.jquery);
     RegisterJSandJQueryExtensions();
 
     ///*----
@@ -792,7 +806,7 @@
         handler = function (o) {
           o.disconnect();
           // trigger the handler itself
-          doHandleLocation(location, parsedLocation, hFuncs, hName);
+          doHandleLocation(location, parsedLocation, MH_PAGE_HANDLER, 'MH_PAGE_HANDLER["{0}"]'.format(parsedLocation));
         },
         observer = new unsafeWindow.MutationObserver(function (changes, o) {
             clearTimeout(timer);
@@ -805,7 +819,7 @@
     /*----
     // (using promise + delayed call to let the page being built before tweaking it)
     TimeoutPromise(TIMEOUT_HANDLER, l).then(function () {
-      doHandleLocation(location, parsedLocation, hFuncs, hName);
+      doHandleLocation(location, parsedLocation, MH_PAGE_HANDLER, 'MH_PAGE_HANDLER["{0}"]'.format(parsedLocation));
     });
     //----*/
   }
@@ -834,11 +848,11 @@
           $ = unsafeWindow.jQuery;
 
           VZ.warn("...ok, now let's handle this (%s)", p);
-          HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+          HandleLocation(l, p);
         }
       })).observe(document, {childList: true, subtree: true});
     } else
-      HandleLocation(l, p, MH_PAGE_HANDLER, "MH_PAGE_HANDLER");
+      HandleLocation(l, p);
   });
 
 })(unsafeWindow.jQuery);

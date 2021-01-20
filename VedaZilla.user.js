@@ -67,16 +67,25 @@
         VZV_NO_EXTERNAL_VIEW = 'NO_EXTERNAL_VIEW',
         VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD',
         VZ_COMP = {
+          CAMO: "4",
+          IDC: "5",
+          DE: "12",
           PIEGE: "15",
           CDM: "16",
           INSULTE: "18",
           PISTAGE: "21",
           LDP: "23",
+          BIDOUILLE: "24",
+          GRATTAGE: "26",
+          DRESSAGE: "27",
           BAROUFLE: "43",
+          COURSE: "44"
         },
         VZV_LAST_COMP = 'LAST_COMP',
         VZ_SORT = {
+          PROJO: "1",
           HYPNO: "2",
+          VL: "9",
           IDT: "10",
           VT: "11",
           FP: "12",
@@ -84,9 +93,13 @@
           AE: "16",
           SACRO: "17",
           GLUE: "18",
+          FA: "19",
           AA: "20",
           PROJ: "21",
+          VA: "22",
+          VLC: "23",
           TELEK: "24",
+          BAM: "27",
           GDS: "28"
         },
         VZV_LAST_SORT = 'LAST_SORT';
@@ -528,6 +541,11 @@
   };
 
   MH_COMP_RESULT_HANDLER[VZ_COMP.PISTAGE] = function(p, l) {
+    let ctn = $('#msgEffet');
+    ctn.html(ctn.html()
+             .replace(/(Oxhykan)/, "$1 (X-)").replace(/(Orhykan)/,  "$1 (X+)")
+             .replace(/(Mydikan)/, "$1 (Y-)").replace(/(Nordikan)/, "$1 (Y+)")
+             .replace(/(Bas)/,     "$1 (N-)").replace(/(Haut)/,     "$1 (N+)"));
   };
 
   //-- Sorts ----

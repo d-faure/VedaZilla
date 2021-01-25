@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.21.3
+// @version     0.21.4
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -488,25 +488,25 @@
       //})(unsafeWindow.jQuery);
     }
 
-    //
     // gestion Re(...)
-    //      ti.val(function(i, v) {
-    //        if (v) {
-    //          let re1 = /Re\s*:\s*/ig,
-    //              n = (v.match(re1) || []).length,
-    //              re2 = /Re\s*\(\d+\)\s*:\s*/ig;
-    //          n += (function() {
-    //            let p = 0,
-    //                a = (v.match(re2) || []).join().match(/\d+/g);
-    //            for (let i = 0; i < a.length; ++i) p += 1 * a[i];
-    //            return p; })();
-    //          v = v.replace(re1, '').replace(re2, '').replace(/^\s+/g,'');
-    //          let t = v.match(/^\[.*\]\s?/);
-    //          v = ((n > 1) ? ("Re(" + n + ") : ") : "Re : ") + v;
-    //          if (t) v = t + v.replace(t, '');
-    //        }
-    //        return v;
-    //      });
+    ti.val((function(v) {
+      if (v) {
+        let re1 = /Re\s*:\s*/ig,
+            n = (v.match(re1) || []).length,
+            re2 = /Re\s*\(\d+\)\s*:\s*/ig;
+        v = v.replace(re1, 'Re(1):');
+        n += (function() {
+          let p = 0,
+              a = (v.match(re2) || []).join().match(/\d+/g) || [];
+          for (let i = 0; i < a.length; ++i) p += 1 * a[i];
+          return p; })();
+        v = v.replace(re2, '').replace(/^\s+/g,'');
+        let t = v.match(/^\[.*\]\s?/);
+        v = ((n > 1) ? ("Re(" + n + ") : ") : "Re : ") + v;
+        if (t) v = t + v.replace(t, '');
+      }
+      return v;
+    })(ti.val()));
   };
 
   MH_PAGE_HANDLER["MH_Play/Actions/Play_a_Attack"] =
@@ -543,9 +543,9 @@
   MH_COMP_RESULT_HANDLER[VZ_COMP.PISTAGE] = function(p, l) {
     let ctn = $('#msgEffet');
     ctn.html(ctn.html()
-             .replace(/(Oxhykan)/, "$1 (X-)").replace(/(Orhykan)/,  "$1 (X+)")
-             .replace(/(Mydikan)/, "$1 (Y-)").replace(/(Nordikan)/, "$1 (Y+)")
-             .replace(/(Bas)/,     "$1 (N-)").replace(/(Haut)/,     "$1 (N+)"));
+             .replace(/(Oxhykan)/, "$1 (X-)").replace(/(Orhykan)/,   "$1 (X+)")
+             .replace(/(Mydikan)/, "$1 (Y-)").replace(/(Nohrdikan)/, "$1 (Y+)")
+             .replace(/(Bas)/,     "$1 (N-)").replace(/(Haut)/,      "$1 (N+)"));
   };
 
   //-- Sorts ----

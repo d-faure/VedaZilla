@@ -544,7 +544,7 @@
   };
 
   MH_COMP_RESULT_HANDLER[VZ_COMP.PISTAGE] = function(p, l) {
-    let ctn = $('#msgEffet');
+    let ctn = $('#msgDiv');
     ctn.html(ctn.html()
              .replace(/(Oxhykan)/, "$1 (X-)").replace(/(Orhykan)/,   "$1 (X+)")
              .replace(/(Mydikan)/, "$1 (Y-)").replace(/(Nohrdikan)/, "$1 (Y+)")

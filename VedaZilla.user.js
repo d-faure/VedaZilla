@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.21.4
+// @version     0.21.5
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -42,7 +42,7 @@
 (function($) {
   'use strict';
 
-  const MH_JQUERY_SRC = '/mountyhall/JavaScripts/jquery/js/jquery-1.11.3.min.js',
+  const MH_JQUERY_SRC = '/mountyhall/JavaScripts/jquery/js/jquery-3.1.1.min.js',
         MH_URL_RE = /\/mountyhall\/(.*?)\.php/,
         MH_FOLLOWERS_RE = /(Apprivoisé|Golem de (cuir|métal|papier|mithril))/i,
         VZ_LIGHT_GREEN = "#AEFFAE",
@@ -346,14 +346,16 @@
 
   MH_PAGE_HANDLER["MH_Play/Play_e_follo"] = function(p, l) {
     // Actions des suivants
-    $('form td.mh_titre3').each(function(i, e) {
+    $('td.mh_tdtitre_fo').each(function(i, e) {
       let td = $(e),
           fullname = td.find("a:first").text().trim(),
-          tmp = /^(\d+)\.(.*)$/.exec(fullname),
-          id = tmp[1], name = tmp[2],
+          tmp = /^(.*) \((\d+)\)$/.exec(fullname),
+          name = tmp[1], id = tmp[2],
           url = "<a href='/mountyhall/MH_Follower/FO_{0}.php?ai_IdFollower={id}'>{0}</a>".format({id: id});
+      VZ.log({fullname: fullname, name: name, id: id, url: url});
       $("<tr/>")
         .append($("<td/>")
+                .addClass("mh_tdpage")
                 .append(["Profil", "Ordres", "Equipement", "Description"].map(function (v) { return url.format(v); }).join(" - ")))
         .insertAfter(td.parents("tr:first"));
     });
@@ -491,16 +493,17 @@
     // gestion Re(...)
     ti.val((function(v) {
       if (v) {
-        let re1 = /Re\s*:\s*/ig,
-            n = (v.match(re1) || []).length,
-            re2 = /Re\s*\(\d+\)\s*:\s*/ig;
-        v = v.replace(re1, 'Re(1):');
-        n += (function() {
-          let p = 0,
-              a = (v.match(re2) || []).join().match(/\d+/g) || [];
-          for (let i = 0; i < a.length; ++i) p += 1 * a[i];
-          return p; })();
-        v = v.replace(re2, '').replace(/^\s+/g,'');
+        VZ.log({v: v});
+        v = v.replace(/Re\s*:\s*/ig, 'Re(1):');
+        let re = /Re\s*\(\d+\)\s*:\s*/ig,
+            n = 1 + (function() {
+              let p = 0,
+                  a = (v.match(re) || []).join().match(/\d+/g) || [];
+              for (let i = 0; i < a.length; ++i) p += 1 * a[i];
+              VZ.log({a: a, p: p});
+              return p; })();
+        VZ.log({v: v, n: n});
+        v = v.replace(re, '').replace(/^\s+/g,'');
         let t = v.match(/^\[.*\]\s?/);
         v = ((n > 1) ? ("Re(" + n + ") : ") : "Re : ") + v;
         if (t) v = t + v.replace(t, '');

@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.21.5
+// @version     0.21.6
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      disciple
 // @copyright   2019+
@@ -16,7 +16,6 @@
 // @grant       GM.setValue
 // @grant       GM_setValue
 // @grant       GM.xmlHttpRequest
-// @grant       GM_xmlHttpRequest
 // @require     https://greasemonkey.github.io/gm4-polyfill/gm4-polyfill.js
 // @downloadURL https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.user.js
 // @updateURL   https://github.com/d-faure/VedaZilla/raw/master/VedaZilla.meta.js
@@ -79,7 +78,8 @@
           GRATTAGE: "26",
           DRESSAGE: "27",
           BAROUFLE: "43",
-          COURSE: "44"
+          COURSE: "44",
+          MINAGE: "48"
         },
         VZV_LAST_COMP = 'LAST_COMP',
         VZ_SORT = {
@@ -543,12 +543,14 @@
     MH.MsgEffet();
   };
 
-  MH_COMP_RESULT_HANDLER[VZ_COMP.PISTAGE] = function(p, l) {
+  MH_COMP_RESULT_HANDLER[VZ_COMP.PISTAGE] =
+     MH_COMP_RESULT_HANDLER[VZ_COMP.MINAGE] = function(p, l) {
     let ctn = $('#msgDiv');
     ctn.html(ctn.html()
              .replace(/(Oxhykan)/, "$1 (X-)").replace(/(Orhykan)/,   "$1 (X+)")
              .replace(/(Mydikan)/, "$1 (Y-)").replace(/(Nohrdikan)/, "$1 (Y+)")
              .replace(/(Bas)/,     "$1 (N-)").replace(/(Haut)/,      "$1 (N+)"));
+    VZ.log({ctn: ctn, html: ctn.html()});
   };
 
   //-- Sorts ----

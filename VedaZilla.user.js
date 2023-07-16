@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name        VedaZilla
 // @namespace   https://github.com/d-faure/VedaZilla/
-// @version     0.21.6
+// @version     0.21.7
 // @description Veda guild's quick'n'dirty (Violent|Tamper)Monkey userscript for MountyHall
 // @author      d.Faure (disciple)
 // @copyright   2019+
@@ -66,6 +66,7 @@
         VZV_SIGNATURE = 'SIGNATURE',
         VZV_NO_EXTERNAL_VIEW = 'NO_EXTERNAL_VIEW',
         VZV_HIGHLIGHT_ANY_TD = 'HIGHLIGHT_ANY_TD',
+        VZV_NEXT_DLA = 'NEXT_DLA',
         VZ_COMP = {
           CAMO: "4",
           IDC: "5",
@@ -178,14 +179,28 @@
     }), ")"));
   };
 
+  MH_PAGE_HANDLER["MH_Play/TurnStart"] = function(p, l) {
+    let DLA = $('#nextTurn');
+    VZ.SetValue(VZV_NEXT_DLA, DLA.text());
+  }
+
   //-- Login ----
   MH_PAGE_HANDLER["MH_Play/PlayStart2"] = function(p, l) {
     // Boutons login
     let btView = $("#viewbutton").css({color: VZ_LIGHT_GREEN, "margin-right": "0.5em"}),
-        btLogin = $("#loginbutton").css({color: VZ_PINK, "margin-right": "0.5em"});
+        btLogin = $("#loginbutton").css({color: VZ_PINK, "margin-right": "0.5em"}),
+        nextDLA = VZ.GetValue(VZV_NEXT_DLA, '');
 
     if (VZ.GetIntValue(VZV_HOME_BUTTON, 0))
       btView.after(btLogin.detach());
+
+    if(nextDLA != ''){
+      let nDLA = $('<div></div>');
+      nDLA.text('DLA : ' + nextDLA);
+      nDLA.css('margin-bottom', '1em');
+      nDLA.css('margin-top', '0.5em');
+      $('#loginform>fieldset>legend').after(nDLA);
+    }
   };
 
   //-- Left menu ----
@@ -858,7 +873,7 @@
     if (typeof(unsafeWindow.jQuery) == 'undefined') {
       VZ.warn("insert missing jQuery on %s ...", p);
 
-		  let head = document.getElementsByTagName('head')[0] || document.documentElement,
+      let head = document.getElementsByTagName('head')[0] || document.documentElement,
           script = document.createElement('script');
       script.src = MH_JQUERY_SRC;
       script.type = 'text/javascript';
